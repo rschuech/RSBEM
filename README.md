@@ -18,7 +18,7 @@ The Salome Platform (https://www.salome-platform.org/) has been used to generate
 
 ### How do I get set up? ###
 
-All code (with notable exception of Python scripts for geometry / meshing in Salome) is in MATLAB.  The Statistics and Machine Learning Toolbox is needed as well as the Parallel Computing Toolbox for a number of parallelized routines (e.g. using parfor).  In addition, several computationally intensive functions (i.e. calls to "...mexed()" functions) can/should be compiled to C using the Coder Toolbox - this yields a factor of ~30 speed increase in prior tests.
+All code (with notable exception of Python scripts for geometry / meshing in Salome) is in MATLAB.  The Statistics and Machine Learning Toolbox is needed as well as the Parallel Computing Toolbox for a number of parallelized routines (e.g. using parfor).  In addition, several computationally intensive functions (i.e. calls to "...mexed()" functions) can/should be compiled to C using the Coder Toolbox - this yields a factor of ~30 speed increase in prior tests.  Compiled .mexw64 files for Windows x64 platforms (compiled with Microsoft Visual C++ 2017) are included here for convenience but users of other operating systems e.g. Linux would need to recompile them through the Coder Toolbox and a suitable C compiler.
 
 
 
