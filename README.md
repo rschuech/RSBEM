@@ -5,7 +5,7 @@ regularized Stokeslet Boundary Element Method in MATLAB
 
 ### What is this repository for? ###
 
-This repository contains a MATLAB implementation of a regularized Stokeslet Boundary Element Method (RSBEM).  It is heavily inspired by (1) but utilizes 2nd order curved triangular surface meshes and some performance improvements.  So far, it has primarily been used to model swimming monoflagellated bacteria (2) as well as swimming dinoflagellates (3) but effort has been made to keep the code general where possible, so other geometries and low-Reynolds number problems can be modeled in the future.
+This repository contains a MATLAB implementation of a regularized Stokeslet Boundary Element Method (RSBEM) for simulating low-Reynolds number "creeping" flows in 3D.  It is heavily inspired by (1) but utilizes 2nd order curved triangular surface meshes and some performance improvements.  So far, it has primarily been used to model swimming monoflagellated bacteria (2) as well as swimming dinoflagellates (3) but effort has been made to keep the code general where possible, so other geometries and low-Reynolds number problems can be modeled in the future.
 
 The Salome Platform (https://www.salome-platform.org/) has been used to generate geometries and meshes; python scripts related to this for curved rod bacteria and helical bacterial flagella are also included.
 
