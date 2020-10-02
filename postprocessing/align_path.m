@@ -3,6 +3,10 @@ function [shift,angle,rotvec] = align_path(fits,y0)
 
 
 ind = find(fits.line.speed == fits.converged.speed);
+if isempty(ind)
+    ind = length(fits.line.speed);
+    warning('line fit to swimming path not yet converged');
+end
 intercept = fits.line.intercept(:,ind);
 slope = fits.line.slope(:,ind) * fits.line.speed(ind);  % slope and speed are combined in geom3d line representation
 

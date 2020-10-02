@@ -14,13 +14,13 @@ init_only = false;
 redo_failures_only = false;
 %  redo_failures_only = false;
 output_type = 'mesh';  % CAD or mesh
-batch = false;
+batch = false; % true if running automatically during tail optimizations
 
 switch getenv('computername')
     case 'UBERTOP'
         switch output_type
             case 'mesh'
-        paths.outfolder = 'C:/Hull/even_more_meshes/';  %be sure to use / instead of \ here; regexprep won't work with \
+        paths.outfolder = 'C:/Hull/sphere mesh/';  %be sure to use / instead of \ here; regexprep won't work with \
             case 'CAD'
               paths.outfolder = 'C:/Hull/comsol/shapes/';  
         end
@@ -58,23 +58,40 @@ switch geom.shape
         %factors = [1.25];
         % factors = 1;
         %number of wavelengths for entire tail
-       nlambda = 1.49 * [   1  ];  %power optimized, Shum et al
+%        nlambda = 1.49 * [   1  ];  %power optimized, Shum et al
         %  geom.nlambda = 1.28;  %torque optimized, Shum et al
+% Nlambda = 5.02 / 1.58;
+
         
         %wavelength of helix
-        lambda = [4.68   ] * sphererad; %power opt
+%         lambda = [4.68   ] * sphererad; %power opt
         %geom.lambda = 1.4 * geom.sphererad; %torque opt
-        
+        Lambda = 1.58;
         %amplitude of helix i.e. radius of helix centerline
-         amp = [0.87  ./ (2*pi/lambda)];   %power opt
+%          amp = [0.87  ./ (2*pi/lambda)];   %power opt
         %amp = [0.402  * [1.25   1.5]  ];   %power opt
         %amp = 0.68 / (2*pi/geom.lambda);  %torque opt
+        Amp = 0.14;
         
+        arclength = 5.02;
+        obj = @(nlambda) bacterial_tail_arclength([Amp Lambda nlambda]) - arclength ;
+% arclength = sqrt(amp^2 + 1/KE^2) * KE*xi    from wolfram helix page, with
+% c = 1/KE
+k = 2*pi./Lambda;  KE = k; % as per Shum et al
+nlambda_guess = arclength / sqrt( Amp^2 + 1/KE^2 ) / KE / Lambda;  % using basic helix equation, neglecting variable amp
+Nlambda = fzero(obj, nlambda_guess);
+
+
+
         %  pipeRadius = [0.05] * sphererad;  %radius of flagellum "pipe"
         % in Fluid Mech of Propulsion by cilia and flagella p. 352, range
         % of flagella radius stated to be 0.012 -  0.02 um.  Shum used
         % about 0.03 = 0.05 * sphererad
-        pipeRadius_orig = [0.05] * sphererad;
+%         pipeRadius_orig = [0.05] * sphererad; % for everything in curved
+%         rods MS
+pipeRadius_orig = 32 / 2 / 1000;
+        
+        
         
         %pipeRadius_orig = 0.024 / 2;  %Oscar's Ecoli
         
@@ -248,15 +265,32 @@ switch geom.shape
 
         
         
-        [AR1, AR2] = ndgrid(AR1,AR2);
-        AR1 = AR1(:);  AR2 = AR2(:);
+%         [AR1, AR2] = ndgrid(AR1,AR2);
+%         AR1 = AR1(:);  AR2 = AR2(:);
         
 
  
  AR1 = [        1.65         1.78        3.137        4.773        6.485        8.238       10.00];
  AR2 = [        0.166        0.361        0.443         0.37        0.322        0.298        0.292];
- AR1 = 1.46; AR2 = 0;
+ AR1 = 1; AR2 = 0;
  
+ 
+ % Oscar stuff
+% width = 0.87;
+% length = 1:0.5:10;
+% cyl_height = length - width;  %total length - 2*radius
+
+% AR1 = length / width;
+% 
+% AR2 = zeros(size(AR1));
+
+% V = pi * (width/2)^2 * cyl_height + 4/3*pi*(width/2)^3;
+
+% clear length
+% for c = 1:length(AR1)
+%     geom(c).V = V(c);
+%     geom(c).sphererad = (V(c)*3/4/pi)^(1/3);  %equivalent sphere radius
+% end
 
 pts = [1 0; 1.125 0.45; 1.25 0.45; 1.375 0.25;  1.5 0.35; 1.625 0.375; 1.75 0.425; 2 0.5; 2.5 0.65; 3 0.775; 3.5 0.875; 4 0.9; 4.5 1; 6.5 1; 8 1; 10 1;];
 pp = pchip(pts(:,1),pts(:,2));
@@ -283,7 +317,8 @@ factor = 4.2 * 1   *3    *0.025   *1.5  ;  %1 for base refinement
             geom(c).AR1 = AR1(c);
             geom(c).AR2 = AR2(c);
             
-            geom(c)
+            geom
+     
             
             if geom(c).AR1 == 1  %we have a sphere
                 geom(c).radius = geom.sphererad;
@@ -353,8 +388,8 @@ factor = 4.2 * 1   *3    *0.025   *1.5  ;  %1 for base refinement
             
          
             %  factor = 0.3;  %0.155 gives just over the max limit of verts
-            mesh(c).maxsize = ( geom(c).radius ^ (0.4) ) * 0.6  * factor  * 0.8 ;  %0.8
-            mesh(c).minsize = mesh(c).maxsize * 1/2   *0.15   *5       ;  %1/3
+            mesh(c).maxsize = ( geom(c).radius ^ (0.4) ) * 0.6  * factor  * 0.8 *0.8;  %0.8
+            mesh(c).minsize = mesh(c).maxsize * 1/2   *0.15   *5     *0.8  ;  %1/3
 
             mesh(c).fineness = 1;
             mesh(c).refine_crack = refine_crack(c);

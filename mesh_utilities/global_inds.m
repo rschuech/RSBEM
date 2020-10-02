@@ -3,32 +3,32 @@ function [Mesh] = global_inds(Mesh)
 %orig inds is what came directly from the .dat file.  however, orig inds may be repeated among submeshes, and this is a
 %problem when assembling A matrix.  So make global index lists, which
 %monotonically increase from submesh to submesh, and skip over elems or
-%verts that have already appeared in a previous submesh.  this should make
+%nodes that have already appeared in a previous submesh.  this should make
 %assembling A easier....
 
 concat.elem = [];  %concatenated elem inds
-concat.vert = [];
+concat.node = [];
 
 for i = 1:length(Mesh)  %submeshes
     
-    names = {'elem','vert'};
+    names = {'elem','node'};
     for n = 1:length(names)
         name = names{n};
-        %convention here is that elems, verts are included in the first submesh in which
-        %they occur (so if a vert belongs to body and tail, it will only be
+        %convention here is that elems, nodes are included in the first submesh in which
+        %they occur (so if a node belongs to body and tail, it will only be
         %listed in body since it's the first submesh)
         switch name
             case 'elem'
-                Mesh(i).indices.glob.elem = NaN(Mesh(i).n_elem,1);
-            case 'vert'
-                Mesh(i).indices.glob.vert = NaN(Mesh(i).n_vert,1);
+                Mesh(i).indices.glob.elem = NaN(Mesh(i).n_elems,1);
+            case 'node'
+                Mesh(i).indices.glob.node = NaN(Mesh(i).n_nodes,1);
         end
         
         if i > 1 %at least 2nd submesh, concatenate prior submesh orig indices onto big aggregated list
             concat.(name) = [concat.(name); Mesh(i-1).indices.orig.(name)];
         end
         
-        %unq_bounds contains the start and end global indices of elems or verts
+        %unq_bounds contains the start and end global indices of elems or nodes
         %first found in this submesh, as opposed to previous submeshes (it does
         %not mean they are *only* found in the current submesh)
         
@@ -61,7 +61,7 @@ for i = 1:length(Mesh)  %submeshes
             end
         end
         
-    end  %elem and vert
+    end  %elem and node
     
 end %submeshes
 

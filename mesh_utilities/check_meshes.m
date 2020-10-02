@@ -1,6 +1,6 @@
 %%
 
-nrefines = 2;
+nrefines = 1;
 volume_tol = 0.005;  % <= 0.5% error allowable
 %area_outlier_tol = 10;
 max_angle = 90*pi/180 ; %max angle between adjacent element normals, located at centroids of the elements
@@ -17,7 +17,7 @@ plot_goods = true;
 % refine crack
 % [1.375 0.3;
 
-input.performance.nthreads = 4;
+input.performance.nthreads = 10;
 
 input.accuracy.integration_tol.area.abstol = 1E-9 ;
 input.accuracy.integration_tol.area.reltol = 0.1;
@@ -31,7 +31,7 @@ input.accuracy.integration_tol.volume.abstol = 1E-9;
 input.accuracy.integration_tol.volume.reltol = 0.1;
 input.accuracy.integration_tol.volume.maxevals = Inf;
 
-input.performance.verbose = true;
+input.performance.verbose = false;
 
 
 
@@ -47,7 +47,7 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
         if c < 0
             continue
         end
-        c
+%         c
         %                 if succeeded(c)
         %                     continue
         %                 end
@@ -61,7 +61,7 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
         
         if isempty(Metadata)
             disp('empty Metadata')
-            pause
+%             pause
         else
             if skip_succeeded && isfield(Metadata.mesh, 'meshing_succeeded') && Metadata.mesh.meshing_succeeded
                 succeeded(c) = true;
@@ -76,12 +76,12 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
             if input.performance.verbose
             disp([paths(path_ind).mesh_file,'      never created']);
             end
-             pause
+%              pause
             Metadata.mesh.meshing_succeeded = false;
             save(paths(c).metafile,'Metadata');
             succeeded(c) = false;
             reason(c) = -1;
-             pause
+%              pause
             
             continue
             
@@ -110,14 +110,14 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
             end
             
             if plot_bads
-                figure(34)
+                figure(35)
                 cla
                 [s,e] = plot_mesh(Mesh,nrefines);
                 set(s,'facealpha',1);
                 title(paths(path_ind).mesh_file,'interpreter','none');
                 drawnow
                 %   disp('Mark mesh as bad and continue?');
-                pause
+%                 pause
             end
             
             
@@ -145,18 +145,18 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
         end
         
         % not out of the woods yet; may still have the wrong volume
-        if ~strcmp(geom(1).shape,'tail') && (  Mesh.Volume < (1 - volume_tol) || Mesh.Volume > (1 + volume_tol)  ) %if volume is either too small or too large
+        if ~strcmp(geom(1).shape,'tail') && (  Mesh.Volume < (geom(c).V*(1-volume_tol)) || Mesh.Volume > (geom(c).V*(1+volume_tol))  ) %if volume is either too small or too large
             if input.performance.verbose
-            disp([paths(path_ind).mesh_file,'    has volume problem, error = ',num2str(100*(1-Mesh.Volume)),' %']);
+            disp([paths(path_ind).mesh_file,'    has volume problem, error = ',num2str(100*(geom(c).V-Mesh.Volume)/geom(c).V),' %']);
             end
             if plot_bads
-                figure(34)
+                figure(35)
                 cla
                 [s,e] = plot_mesh(Mesh,nrefines);
                 set(s,'facealpha',1);
-                title({paths(path_ind).mesh_file,['has volume problem, error = ',num2str(100*(1-Mesh.Volume)),' %']},'interpreter','none');
+                title({paths(path_ind).mesh_file,['has volume problem, error = ',num2str(100*(geom(c).V-Mesh.Volume)/geom(c).V),' %']},'interpreter','none');
                 drawnow
-                 pause
+%                  pause
             end
             Metadata.mesh.meshing_succeeded = false;
             Metadata.mesh.wrong_volume = true;
@@ -201,7 +201,7 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
             disp([paths(path_ind).mesh_file,'    has normals angle problem']);
             end
             if plot_bads
-                figure(34)
+                figure(35)
                 cla
                 [s,e] = plot_mesh(Mesh,nrefines);
                 set(s,'facealpha',0.6);
@@ -226,7 +226,7 @@ if strcmp(geom(1).shape,'curved_rod') || strcmp(geom(1).shape,'tail')  %need to 
             disp([paths(path_ind).mesh_file,'    seems OK']);
             end
             if plot_goods 
-                figure(34)
+                figure(35)
                 cla
                 [s,e] = plot_mesh(Mesh,nrefines);
                 %  set(s,'facealpha',1);

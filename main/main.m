@@ -524,7 +524,7 @@ for sweep_i = 1:length(Inputs)
                 disp('Beginning timestepping.');
             end
             timestepping_solution0 = [];  refpoint0 = Mesh(1).refpoints(:,1);
-            [fits, timestepping_solution, timings] = timestepping(input,dump,timestepping_solution0,refpoint0);  %timestepping dump file is saved internally, contains timestepping_solution and fits
+            [fits, timestepping_solution, timings] = timestepping(input,dump,timestepping_solution0,refpoint0,Mesh);  %timestepping dump file is saved internally, contains timestepping_solution and fits
 %             if input.performance.verbose
 %                 disp(['Timestepping took ',num2str(timings.timestepping / 60), ' min']);
 %             end
@@ -532,13 +532,17 @@ for sweep_i = 1:length(Inputs)
 
  %%
 
-            if strcmp(input.bugtype,'bacteria')
-                interpolant = interpolant(end).omega;  %last and most accurate interpolant for tail rotation rate omega
-                
-                [avg_omega] = compute_avg_omega(interpolant);
-                
-                %in addition to storing in memory for later inclusion into aggregate results file, immediately save avg_omega and motor_torque inside timestepping dump file
-                m = matfile([input.paths.dumpfolder,input.paths.namebase.full,'_timestepping','.mat'],'Writable',true);
+ if strcmp(input.bugtype,'bacteria')
+     switch input.tail.motorBC
+         case 'torque'
+             interpolant = interpolant(end).omega;  %last and most accurate interpolant for tail rotation rate omega
+             
+             [avg_omega] = compute_avg_omega(interpolant);
+         case 'freq'
+             avg_omega = input.tail.motor_freq;
+     end
+     %in addition to storing in memory for later inclusion into aggregate results file, immediately save avg_omega and motor_torque inside timestepping dump file
+     m = matfile([input.paths.dumpfolder,input.paths.namebase.full,'_timestepping','.mat'],'Writable',true);
                 m.avg_omega = avg_omega;
                 m.motor_torque = input.tail.motor_torque;
                 

@@ -1,4 +1,4 @@
-function [is_intersected] = submesh_intersections(Mesh, dist_tol ,n_angles, plot_intersections, nthreads,varargin)
+function [is_intersected] = submesh_intersections(Mesh,node_parameters,index_mapping, dist_tol ,n_angles, plot_intersections, nthreads,varargin)
 %checks for collisions between body and tail during tail rotation, which would mean an
 %invalid geometry.  n_angles evenly spaced phase angles are checked.
 % varargin is the mesh refinement levels
@@ -23,38 +23,39 @@ if ~isempty(n_angles)   % this is prolly bacteria mesh, we need to check many ta
     Surface_refined = refine_vis_surface(Mesh, nrefines);  %refine body more than tail
     
     
-    parfor (i = 1:length(angles), nthreads)  %at least for 10 test angles, parfor seems about 6 times faster than for
+%     parfor (i = 1:length(angles), nthreads)  %at least for 10 test angles, parfor seems about 6 times faster than for
+        for i = 1:length(angles)
         angle = angles(i);
-        Mesh_temp = struct;
+%         Mesh_temp = struct;
         Mesh_temp = Surface_refined(1);
-        [Mesh_temp(2)] = rotateMesh(Surface_refined(2), [   0  0  angle]' );  %rotate tail around x axis
-        
-        %     idx = rangesearch(Mesh_temp(1).verts,Mesh_temp(2).verts,dist_tol); %finds all the X points that are within distance r of the Y points. Rows of X and Y correspond to observations, and columns correspond to variables.
+%         [Mesh_temp(2)] = rotateMesh(Surface_refined(2), [   0  0  angle]' );  %rotate tail around x axis
+         [Mesh_temp] = rotateTail(Surface_refined, node_parameters,index_mapping,2, angle);
+        %     idx = rangesearch(Mesh_temp(1).nodes,Mesh_temp(2).nodes,dist_tol); %finds all the X points that are within distance r of the Y points. Rows of X and Y correspond to observations, and columns correspond to variables.
         %     intersections = [];
         %     for id = 1:length(idx)
         %         if ~isempty(idx{id})
-        %             intersections(end + 1 : end + length(idx{id}),:) = Mesh_temp(1).verts(idx{id},:);
+        %             intersections(end + 1 : end + length(idx{id}),:) = Mesh_temp(1).nodes(idx{id},:);
         %
         %         end
         %     end
         
         % this choice of tail and then body input order seems slightly faster than above
         % choice of body and then tail
-        idx = rangesearch(Mesh_temp(2).verts,Mesh_temp(1).verts,dist_tol); %finds all the X points that are within distance r of the Y points. Rows of X and Y correspond to observations, and columns correspond to variables.
+        idx = rangesearch(Mesh_temp(2).nodes,Mesh_temp(1).nodes,dist_tol); %finds all the X points that are within distance r of the Y points. Rows of X and Y correspond to observations, and columns correspond to variables.
         intersections = [];
         for id = 1:length(idx)
             if ~isempty(idx{id})
-                intersections(end + 1 : end + length(idx{id}),:) = Mesh_temp(2).verts(idx{id},:);
+                intersections(end + 1 : end + length(idx{id}),:) = Mesh_temp(2).nodes(idx{id},:);
                 
             end
         end
         
-        % intersections = mesh2mesh(Mesh(1).elems(:,1:3),Mesh(1).verts,MeshR.elems(:,1:3),MeshR.verts);
+        % intersections = mesh2mesh(Mesh(1).elems(:,1:3),Mesh(1).nodes,MeshR.elems(:,1:3),MeshR.nodes);
         
         if plot_intersections && ~isempty(intersections)
             
             
-            figure(635);  cla;  s = plot_mesh( [Mesh(1) rotateMesh(Mesh(2), [ angle  0  0]' )], [1 1]); hold on;  set(s,'facealpha',1);  light;
+            figure(635);  cla;  s = plot_mesh( rotateTail(Mesh,node_parameters,index_mapping,2, angle), [1 1]); hold on;  set(s,'facealpha',1);  light;
             if ~isempty(intersections)
                 ph = plot3(intersections(:,1),intersections(:,2),intersections(:,3),'o','markerfacecolor','b','markersize',8);
             end
@@ -104,15 +105,15 @@ else  %prolly dinoflagellate - only need to check for intersections between body
     
 %     Mesh_temp = Surface_refined(other_inds);  %should always be body, transverse, hairs
 %     Mesh_temp(2) = Surface_refined(3); %should always be tail....
-    tail_verts = Mesh(tail_ind).verts;
-    other_verts = vertcat(Mesh(other_inds).verts);
+    tail_nodes = Mesh(tail_ind).nodes;
+    other_nodes = vertcat(Mesh(other_inds).nodes);
     
-    idx = rangesearch(tail_verts,other_verts,dist_tol); %finds all the X points that are within distance r of the Y points. Rows of X and Y correspond to observations, and columns correspond to variables.
+    idx = rangesearch(tail_nodes,other_nodes,dist_tol); %finds all the X points that are within distance r of the Y points. Rows of X and Y correspond to observations, and columns correspond to variables.
     
     intersections = [];
     for id = 1:length(idx)
         if ~isempty(idx{id})
-            intersections(end + 1 : end + length(idx{id}),:) = tail_verts(idx{id},:);
+            intersections(end + 1 : end + length(idx{id}),:) = tail_nodes(idx{id},:);
             
         end
     end

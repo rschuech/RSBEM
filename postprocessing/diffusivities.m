@@ -79,9 +79,9 @@ Kr(3,3) = -sum(torque.rz(3,:)) / solutions.rz.Omega0;
 % Kc_check(3,3) = -sum(drag.rz(3,:)) / solutions.rz.Omega0;
 
 
-Dt = kB*T*inv(Kt - Kc' * inv(Kr) * Kc);  %translational diffusion tensor (should be symmetric)  eq. 13a
-Dr = kB*T*inv(Kr - Kc * inv(Kt) * Kc'); %rotational diffusion tensor (should be symmetric)  eq. 13b
-Dc = -inv(Kr) * Kc * Dt; %coupling diffusion tensor  eq. 13c
+Dt = kB*T*inv(Kt - Kc' * inv(Kr) * Kc);  %translational diffusion matrix (should be symmetric)  eq. 13a
+Dr = kB*T*inv(Kr - Kc * inv(Kt) * Kc'); %rotational diffusion matrix (should be symmetric)  eq. 13b
+Dc = -inv(Kr) * Kc * Dt; %coupling diffusion matrix  eq. 13c
 
 
 % %% center of reaction (turns out I don't really need this)
@@ -169,6 +169,11 @@ Dr_cd_sym = D.details.presymmetrization.rotation.axes * D.details.presymmetrizat
 
 % apparently the order of eigenvalues and eigenvectors is not always x, y,
 % z, so make sure it is ordered "correctly"....
+
+% need to update this for pole2pole when tail is often not aligned with x
+% axis?
+
+
 
 temp  = abs(D.rotation.axes) == repmat(max(abs(D.rotation.axes),[],1),3,1);
 [i,j] = ind2sub(size(temp),find(temp == 1));

@@ -1,4 +1,4 @@
-function [fits, timestepping_solution, timings] = timestepping(input,dump,timestepping_solution0,refpoint0)
+function [fits, timestepping_solution, timings] = timestepping(input,dump,timestepping_solution0,refpoint0,Mesh)
 
 if isfield(input.paths,'namebase')
     name = input.paths.namebase.full;
@@ -18,12 +18,17 @@ switch input.bugtype
     case 'bacteria'
         switch input.tail.motorBC
             case 'torque'
-                fun = @(t,y) yprime_interp_mexed(t,y,dump.best_interpolant,input.kinematics_interp_method,NaN); %motor_freq isn't known, it's solved for
+                fun = @(t,y) yprime_interp(t,y,dump.best_interpolant,input.kinematics_interp_method,input.periodic_kinematics,NaN); %motor_freq isn't known, it's solved for
             case 'freq'
-                fun = @(t,y) yprime_interp_mexed(t,y,dump.best_interpolant,input.kinematics_interp_method,input.tail.motor_freq);
+                fun = @(t,y) yprime_interp(t,y,dump.best_interpolant,input.kinematics_interp_method,input.periodic_kinematics,input.tail.motor_freq);
         end
     case 'dino'
-        fun = @(t,y) yprime_interp_mexed(t,y,dump.best_interpolant,input.kinematics_interp_method,input.phase_speed);
+%         temp.x0 = NaN; temp.M = NaN; temp.a0 = NaN; temp.an = NaN; temp.bn = NaN; temp.aM = NaN; temp.L = NaN;
+%         fun = @(t,y)
+%         yprime_interp_mex(t,y,temp,dump.best_interpolant,input.kinematics_interp_method,input.phase_speed);
+%         % can't mex anymore due to use of spline() instead of Fourier
+%         interp?
+ fun = @(t,y) yprime_interp(t,y,dump.best_interpolant,input.kinematics_interp_method,input.periodic_kinematics,input.phase_speed);
         
 end
 options.bound_tol = 0.95;  %if solution contains one or more components beyond this fraction of a lower or upper bound, flag the solution as probably bad - need to adjust bounds for the future
@@ -34,7 +39,7 @@ switch input.bugtype
 %         options.line.guess0 = [0      0   0    1  0  0   12]';
 %         options.line.lb =    [-5000 -10 -10   -1 -1 -1    0]';
 %         options.line.ub =    [5000   10  10    1  1  1  100]';
-               options.line.guess0 = [0      0   0    1  0  0   12]';
+        options.line.guess0 = [Mesh(2).refpoints(:,1)'    Mesh(2).orientation(:,1)'     12]';
         options.line.lb =    [-5000 -5000 -5000   -1 -1 -1    0]';
         options.line.ub =    [5000   5000  5000    1  1  1  100]';
     case 'dino'
@@ -105,7 +110,7 @@ for ti = 1:length(input.accuracy.timestepping.T_interrogate)
             
             if ~isempty(timestepping_solution0) && timestepping_solution0.x(end) >  timestepping_solution.x(end)
                 % this doesn't seem to be used anymore?
-        error('old code reached')
+                error('old code reached')
                 timestepping_solution.x = timestepping_solution0.x;
                 timestepping_solution.y = timestepping_solution0.y;
             end

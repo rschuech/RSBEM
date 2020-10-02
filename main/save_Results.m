@@ -6,7 +6,7 @@ while ~worked
     
     if exist( [input.paths.global_lock_file],'file' )
         disp(['global lock file found, paused for ',num2str(toc/60),' min']);
-        pause(20);
+        pause(10);
         continue
     end
     
@@ -65,9 +65,9 @@ if       strcmp(input.problemtype,'freeswim')  && input.do_timestepping
     
     Results(results_ind).Avg_Power = Results(results_ind).Avg_Omega * Results(results_ind).Motor_Torque;  %one of these should be constant and the other varying unless I eventually implement a constant power motor condition
     
-    Results(results_ind).Torque_eff = 8*pi*input.constants.mu*input.body.sphererad^2*Results(results_ind).Avg_Speed / Results(results_ind).Motor_Torque;
+    Results(results_ind).Torque_eff = 8*pi*input.constants.mu*Metadata(1).geom.sphererad^2*Results(results_ind).Avg_Speed / Results(results_ind).Motor_Torque;
     
-    Results(results_ind).Power_eff = 6*pi*input.constants.mu*input.body.sphererad*Results(results_ind).Avg_Speed^2 / Results(results_ind).Avg_Power;
+    Results(results_ind).Power_eff = 6*pi*input.constants.mu*Metadata(1).geom.sphererad*Results(results_ind).Avg_Speed^2 / Results(results_ind).Avg_Power;
     
     Results(results_ind).Adj_Speed = sqrt( Results(results_ind).Avg_Speed.^2 .* input.constants.power  ./ Results(results_ind).Avg_Power);
     
@@ -83,7 +83,7 @@ if       strcmp(input.problemtype,'forced')
     
     Results(results_ind).rotational_diffusivity = D.rotation.diffusivity;
     
-    
+    % would need to generalize this for tails not aligned with the x-axis
     rotation_axis = D.rotation.axes(:,1) / sqrt(sum(D.rotation.axes(:,1).^2));
     if rotation_axis(1) < 0 %principle axis happens to point backward
         rotation_axis = - rotation_axis;
@@ -110,6 +110,7 @@ end
 if input.swimming_axis_override  % override avg_swimming_axis with those from optimized Temporal SN?
     % for Fore-Aft S/N runs only, hardcode avg_swimming_axis as same as optimized Temporal SN since, for straight tails, actual
     % "swimming path" is some random direction at extremely slow speed
+    % also use this for Tumbling Ease calcs
     load(input.swimming_axis_override_file);
     ind = ismember(input.body.AR',avg_swimming_axes.AR1_AR2,'rows');
     

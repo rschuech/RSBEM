@@ -22,9 +22,15 @@ else
     n_refines = varargin{1};
 end
 
-colors = {'g','r','r','b','c','c'};
+colors = {'g','r',    'g','r','r','b','c','c'}; %body tail       body transverse tail coplanar normal normal
+if isfield(Mesh,'name')
+    names = [Mesh.name];
+    [~, inds] = ismember(names,{ 'Body' , 'Transverse' , 'Tail' , 'Coplanar_Hairs' , 'Normal_Top_Hairs' , 'Normal_Bottom_Hairs'});
+    colors = colors(inds(inds ~= 0));
+end
+
 facealpha = 1;
-edgealpha = 0.9;
+edgealpha = 0.1;
 sidepts = 10;  %number of points along triangle edges was 7
 % factors = [ 0.05 0.5 0.1 0.1];
 factors = [ 0.2 0.75 0.15 0.15];
@@ -52,24 +58,24 @@ Edge_vis = refine_vis_edges(Mesh,sidepts);
 
 for i = 1:length(Surface_vis)
     if nargin >= 3
-       [colors{i}] = colordata(500,'jet',color_limits(i,:),Surface_vis(i).surfun);
+       [colors{i}] = colordata(500,'parula',color_limits(i,:),Surface_vis(i).surfun);
 %          axh(i) = axes;
-%          s(i) = patch(axh(i), 'faces',Surface_vis(i).elems,'vertices',Surface_vis(i).verts,'edgecolor','none','facecolor','interp','FaceVertexCData',Surface_vis(i).surfun,'facealpha',facealpha);
+%          s(i) = patch(axh(i), 'faces',Surface_vis(i).elements,'vertices',Surface_vis(i).nodes,'edgecolor','none','facecolor','interp','FaceVertexCData',Surface_vis(i).surfun,'facealpha',facealpha);
    
-         s(i) = patch( 'faces',Surface_vis(i).elems,'vertices',Surface_vis(i).verts,'edgecolor','none','facecolor','interp','FaceVertexCData',colors{i},'facealpha',facealpha);
+         s(i) = patch( 'faces',Surface_vis(i).elements,'vertices',Surface_vis(i).nodes,'edgecolor','none','facecolor','interp','FaceVertexCData',colors{i},'facealpha',facealpha);
     
     else
 %         axh = gca;
-        s(i) = patch('faces',Surface_vis(i).elems,'vertices',Surface_vis(i).verts,'edgecolor','none','facecolor',colors{i},'facealpha',facealpha);
+        s(i) = patch('faces',Surface_vis(i).elements,'vertices',Surface_vis(i).nodes,'edgecolor','none','facecolor',colors{i},'facealpha',facealpha);
     end
     
     hold on
     
-     if nargin < 3
-    e(i) = patch('faces',Edge_vis(i).elems,'vertices',Edge_vis(i).verts,'facecolor','none','edgecolor','k','edgealpha',edgealpha);
-     else
-         e(i) = NaN;
-     end
+%      if nargin < 3
+    e(i) = patch('faces',Edge_vis(i).elements,'vertices',Edge_vis(i).nodes,'facecolor','none','edgecolor','k','edgealpha',edgealpha);
+%      else
+%          e(i) = NaN;
+%      end
      
     axis equal; 
     

@@ -165,7 +165,13 @@ while n_iter < input.accuracy.interpolation.max_iter
                 if ~isequal(y,y0_interp) %location and/or orientation has changed; this is not the first yprime calculation
                     
                     %first rotate only tail to handle tail phase angle relative to body
-                    Mesh_temp(2) = rotateMesh(Mesh_temp(2),[0 0 y(7)]');  %rotate tail by y(7) around x-axis
+%                     switch input.tail.orientation
+%                         case 'centerline'
+%                             Mesh_temp(2) = rotateMesh(Mesh_temp(2),[0 0 y(7)]');  %rotate tail by y(7) around x-axis
+%                         case 'pole2pole'
+                          [Mesh_temp(2)] = rotateTail(Mesh_temp(2), y(7));
+%                     end
+                    
                     %then move all submeshes according to translation and rotation of body +
                     %tail
                     Mesh_temp = move_Mesh(Mesh_temp,y);
@@ -238,12 +244,12 @@ while n_iter < input.accuracy.interpolation.max_iter
             end
             
             drawnow
-            if input.output.interpolation.doprint
-                try
-                    print('-dpdf',[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.pdf'])
-                    saveas(input.output.interpolation.fignum,[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.fig']);
-                end
-            end
+%             if input.output.interpolation.doprint
+%                 try
+%                     print('-dpdf',[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.pdf'])
+%                     saveas(input.output.interpolation.fignum,[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.fig']);
+%                 end
+%             end
             
         end
         
@@ -342,12 +348,7 @@ while n_iter < input.accuracy.interpolation.max_iter
         drawnow
     end
     
-    if input.output.interpolation.doplot && input.output.interpolation.doprint
-        try
-            print('-dpdf',[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.pdf'])
-            saveas(input.output.interpolation.fignum,[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.fig']);
-        end
-    end
+   
     
     
     if strcmp(input.bugtype,'dino') %save a dump each iteration so intermediate results can be opened elsewhere as run continues
@@ -356,8 +357,13 @@ while n_iter < input.accuracy.interpolation.max_iter
         save([input.paths.dumpfolder,input.paths.namebase.full,'_dump','.mat'],temp{:});
     end
     
+    if isstruct(input.accuracy.interpolation.max_rel_diff)
+        temp = input.accuracy.interpolation.max_rel_diff.mag;
+    else
+        temp = input.accuracy.interpolation.max_rel_diff;
+    end
     
-    if max(current_diffs) < input.accuracy.interpolation.max_rel_diff  %we've allegedly achieved convergence
+    if max(current_diffs) < temp  %we've allegedly achieved convergence
         %         if strcmp(input.bugtype,'bacteria') %for bacteria, only bother
         %         saving final output since the runs go relatively quickly
         %         (actually dump gets saved again anyway in main.m)
@@ -374,4 +380,11 @@ while n_iter < input.accuracy.interpolation.max_iter
     
 end %adaptive while loop
 
+ if input.output.interpolation.doplot && input.output.interpolation.doprint
+        try
+            print('-dpdf',[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.pdf'])
+            saveas(input.output.interpolation.fignum,[input.paths.dumpfolder,input.paths.namebase.full,'_interpolation','.fig']);
+        end
+ end
+    
 clear Mesh_temp fun1 fun2 temp

@@ -1,0 +1,9 @@
+for ggg = 1:length(goal_combos)
+    
+    if isequal( sort(goal_combos{ggg}) ,  sort( [5 6 9])    )
+        ggg
+        stoperoo
+    end
+end
+
+%%

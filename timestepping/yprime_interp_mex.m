@@ -1,9 +1,14 @@
-function [der] = yprime_interp_mex(t,y_in,interpolant,kinematics_interp_method,motor_freq)
+function [der] = yprime_interp_mex(t,y_in,interpolant_trig,interpolant_spline,kinematics_interp_method,motor_freq)
 % for fast timestepping when interpolated kinematic variables can be used
 % use this with ode45 so that time derivatives are taken from trigonmetric
 % interpolants, and no further matrix assembly/solve is needed
 
 % motor_freq must be input - use placeholder NaN for a torque BC
+
+
+
+coder.extrinsic('fnval');
+
 
 if length(y_in) == 6 %constant rotation rate condition, add y(7) internally even though we're not solving for it
     y =  [y_in; t * motor_freq];  %assumes initial angle = 0
@@ -13,19 +18,35 @@ end
 
 y(7) = mod(y(7) + 2*pi, 2*pi);  % shift periodic tail phase angle back to 0 - 2*pi
 
-
-
-% body frame derivatives
-der_body = NaN(length(interpolant),1);  
-% parfor (c = 1:length(interpolant), nthreads)
-for c = 1:length(interpolant)  % slightly faster without parfor but still mexed
-    switch kinematics_interp_method
-        case 'trig'
-            der_body(c,1) = trig_interp_eval(interpolant(c),(y(7)));
-        case 'spline'
-            der_body(c,1) = fnval(interpolant(c),(y(7)));
-    end
+switch kinematics_interp_method
+    case 'trig'
+        % body frame derivatives
+        der_body = NaN(length(interpolant_trig),1);
+        % parfor (c = 1:length(interpolant), nthreads)
+        for c = 1:length(interpolant_trig)  % slightly faster without parfor but still mexed
+            der_body(c,1) = trig_interp_eval(interpolant_trig(c),(y(7)));
+        end
+    case 'spline'
+        der_body = NaN(length(interpolant_spline),1);
+        % parfor (c = 1:length(interpolant), nthreads)
+        for c = 1:length(interpolant_spline)  % slightly faster without parfor but still mexed
+            der_body(c,1) = fnval(interpolant_spline(c),(y(7)));
+        end
+    otherwise
+        der_body = NaN(6,1);
 end
+
+% % body frame derivatives
+% der_body = NaN(length(interpolant),1);
+% % parfor (c = 1:length(interpolant), nthreads)
+% for c = 1:length(interpolant)  % slightly faster without parfor but still mexed
+%     switch kinematics_interp_method
+%         case 'trig'
+%             der_body(c,1) = trig_interp_eval(interpolant(c),(y(7)));
+%         case 'spline'
+%             der_body(c,1) = fnval(interpolant(c),(y(7)));
+%     end
+% end
 der = der_body; %initialization, will overwrite most values
 
 

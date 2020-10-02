@@ -1,4 +1,4 @@
-function [tau_a] = rotate_off_axis_tau(angle, swimming_axis, D_aligned, varargin)
+function [tau_a, D_rot, rotmat] = rotate_off_axis_tau(angle, swimming_axis, D_aligned, varargin)
 
 % if principle_axis_1_ind is included as optional input, it is used as primary principle axis index instead of the first column
 
@@ -7,6 +7,7 @@ tau_a = NaN(size(angle));
 for i = 1:numel(angle)
     
     rotmat = rotate_arbitrary_vector(swimming_axis, angle(i));
+%     rotmat = rotmat';
     
     D_rot = rotmat * D_aligned * rotmat';
     

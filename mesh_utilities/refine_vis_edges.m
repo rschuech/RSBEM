@@ -12,60 +12,60 @@ if isscalar(sidepts)
 end
 
 
-Edge_vis = struct('verts',repmat({[]},length(Mesh),1), 'elems',repmat({[]},length(Mesh),1));
-%     'n_vert',repmat({NaN},length(Mesh),1),'n_elem',repmat({NaN},length(Mesh),1) );  %initialize as input, all fields will be copied
+Edge_vis = struct('nodes',repmat({[]},length(Mesh),1), 'elements',repmat({[]},length(Mesh),1));
+%     'n_vert',repmat({NaN},length(Mesh),1),'n_elements',repmat({NaN},length(Mesh),1) );  %initialize as input, all fields will be copied
 
 
 parfor i_mesh = 1:length(Mesh)
     
     
-    i = 0;
-    for elem_i = 1:Mesh(i_mesh).n_elem
-        start = i + 1;
+    ii = 0;
+    for elem_i = 1:Mesh(i_mesh).n_elements
+        start = ii + 1;
         
-        vertinds = Mesh(i_mesh).elems(elem_i,:);
-        subverts = Mesh(i_mesh).verts(vertinds,:);
-        shape_parameters = Mesh(i_mesh).elem_params(:,elem_i);  %[alpha beta gamma]
+        vertinds = Mesh(i_mesh).elements(elem_i,:);
+        subnodes = Mesh(i_mesh).nodes(vertinds,:);
+        shape_parameters = Mesh(i_mesh).shape_parameters(elem_i,:);  %[alpha beta gamma]
         
         
         %bottom side
         eta = 0;
-        for xi = linspace(0,1,sidepts(i_mesh))
-            i = i+1;
-            [Edge_vis(i_mesh).verts(:,i)] = T6interp(subverts,xi,eta,shape_parameters);
+        for Xi = linspace(0,1,sidepts(i_mesh))
+            ii = ii+1;
+            [Edge_vis(i_mesh).nodes(:,ii)] = T6interp(subnodes,Xi,eta,shape_parameters);
         end
         
-        for xi = linspace(1,0,sidepts(i_mesh))
-            i = i+1;
-            eta = -xi + 1; %diagonal side
-            [Edge_vis(i_mesh).verts(:,i)] = T6interp(subverts,xi,eta,shape_parameters);
+        for Xi = linspace(1,0,sidepts(i_mesh))
+            ii = ii+1;
+            eta = -Xi + 1; %diagonal side
+            [Edge_vis(i_mesh).nodes(:,ii)] = T6interp(subnodes,Xi,eta,shape_parameters);
         end
         
         xi = 0;
-        for eta = linspace(1,0,sidepts(i_mesh))
-            i = i+1;
-            [Edge_vis(i_mesh).verts(:,i)] = T6interp(subverts,xi,eta,shape_parameters);
+        for Eta = linspace(1,0,sidepts(i_mesh))
+            ii = ii+1;
+            [Edge_vis(i_mesh).nodes(:,ii)] = T6interp(subnodes,xi,Eta,shape_parameters);
         end
         
-        last = i;
+        last = ii;
         
-        Edge_vis(i_mesh).elems(elem_i,:) = start:last;
+        Edge_vis(i_mesh).elements(elem_i,:) = start:last;
         
     end
     
-    Edge_vis(i_mesh).verts = Edge_vis(i_mesh).verts';
+    Edge_vis(i_mesh).nodes = Edge_vis(i_mesh).nodes';
     
-    % remove duplicated and shared verts
-    [un,~,ic] = unique(roundn(Edge_vis(i_mesh).verts,-nplaces),'rows');
+    % remove duplicated and shared nodes
+    [un,~,ic] = unique(roundn(Edge_vis(i_mesh).nodes,-nplaces),'rows');
     %un = A(ia,:) and A = un(ic,:)
     
-    temp = Edge_vis(i_mesh).elems;
-    for i = 1:size(Edge_vis(i_mesh).elems,1)
-        temp(i,:) = ic(Edge_vis(i_mesh).elems(i,:));
+    temp = Edge_vis(i_mesh).elements;
+    for i = 1:size(Edge_vis(i_mesh).elements,1)
+        temp(i,:) = ic(Edge_vis(i_mesh).elements(i,:));
     end
     
-    Edge_vis(i_mesh).verts = un;
-    Edge_vis(i_mesh).elems = temp;
+    Edge_vis(i_mesh).nodes = un;
+    Edge_vis(i_mesh).elements = temp;
     
 end
 
@@ -73,8 +73,8 @@ end
 
 for i_mesh = 1:length(Mesh)
     
-    Edge_vis(i_mesh).n_vert = size(Edge_vis(i_mesh).verts,1);
-    Edge_vis(i_mesh).n_elem = size(Edge_vis(i_mesh).elems,1);
+    Edge_vis(i_mesh).n_vert = size(Edge_vis(i_mesh).nodes,1);
+    Edge_vis(i_mesh).n_elements = size(Edge_vis(i_mesh).elements,1);
     
     fields = {'refpoints','orientation','name'};
     for f = 1:length(fields)

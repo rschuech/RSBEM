@@ -1,4 +1,4 @@
-function [Mesh] = shift_mesh_indices(names,Mesh)
+function [Mesh, original_indices] = shift_mesh_indices(names,Mesh, original_indices)
 
 ind = find(strcmp('Tail',names));  %Mesh ind going with tail, if we loaded tail
 if ~isempty(ind)
@@ -7,12 +7,12 @@ if ~isempty(ind)
     %mesh
     other_orig_elem = [];  other_orig_vert = [];
     for other_ind = other_inds
-        other_orig_elem = [other_orig_elem; Mesh(other_ind).indices.orig.elem];
-        other_orig_vert = [other_orig_vert; Mesh(other_ind).indices.orig.vert];
+        other_orig_elem = [other_orig_elem; original_indices(other_ind).elem];
+        other_orig_vert = [other_orig_vert; original_indices(other_ind).vert];
     end
     
     
-    Mesh(ind).indices.orig.elem = Mesh(ind).indices.orig.elem + max(other_orig_elem);
-    Mesh(ind).indices.orig.vert = Mesh(ind).indices.orig.vert + max(other_orig_vert);
+    original_indices(ind).elem = original_indices(ind).elem + max(other_orig_elem);
+    original_indices(ind).vert = original_indices(ind).vert + max(other_orig_vert);
     Mesh(ind).elems             = Mesh(ind).elems             + max(other_orig_vert);  %still using orig vert labels here, until renumber_Mesh below
 end

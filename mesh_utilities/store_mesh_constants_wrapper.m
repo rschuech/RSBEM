@@ -17,8 +17,8 @@ Mesh = rmfield(Mesh,extra);
     
 [Mesh] = store_mesh_constants_init(Mesh);
 
-[Mesh] = store_mesh_constants_mexed(Mesh,input);
-% [Mesh] = store_mesh_constants_mex(Mesh,input);
+% [Mesh] = store_mesh_constants_mexed(Mesh,input);
+[Mesh] = store_mesh_constants_mex(Mesh,input);
 
 %add extra fields back before returning
 for f = 1:length(extra)

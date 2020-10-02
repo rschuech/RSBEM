@@ -1,4 +1,6 @@
-function [Mesh, rotmat] = rotateMesh(Mesh,angles,varargin)
+function [Mesh, rotmat] = rotateMesh(Mesh,node_parameters,index_mapping, inds, angles,varargin)
+% code assumes the submesh indices of Mesh, node_parameters, index_mapping all match, i.e. the original variables (not one submesh) are input
+% inds defines which submeshes to rotate, the others are unmodified
 %rotates mesh in various ways:
 
 % default is to do intrinsic rotations around z, new y, and new x axes as
@@ -41,11 +43,11 @@ function [Mesh, rotmat] = rotateMesh(Mesh,angles,varargin)
     end
     
     
-for i = 1:length(Mesh)
+for i = inds
     
    
         
-    Mesh(i).verts = (rotmat * Mesh(i).verts')';
+    Mesh(i).nodes = (rotmat * Mesh(i).nodes')';
     %also update vectors and other coordinate variables
     Mesh(i).orientation = rotmat * Mesh(i).orientation; %orientation vectors only need to be rotated, not shifted
     Mesh(i).orientation = Mesh(i).orientation ./ repmat(  sqrt(sum(Mesh(i).orientation.^2)),3,1);
@@ -53,6 +55,14 @@ for i = 1:length(Mesh)
     Mesh(i).refpoints = rotmat * Mesh(i).refpoints;
     Mesh(i).centroid = rotmat * Mesh(i).centroid;
     Mesh(i).Centroid = rotmat * Mesh(i).Centroid;
+    
+  
+    
+    node_parameters.normals_avg(index_mapping.local_node2global_node{i},:) = (rotmat * node_parameters.normals_avg(index_mapping.local_node2global_node{i},:)')';
+    
+    for ii = 1:size(node_parameters.normals_avg,3)
+        node_parameters.tangents_avg(index_mapping.local_node2global_node{i},:,ii) = (rotmat * node_parameters.tangents_avg(index_mapping.local_node2global_node{i},:,ii)')';
+    end
     
     
     

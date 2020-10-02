@@ -1,34 +1,38 @@
 function edges = get_edges(Mesh)
 
-
-edges.verts = zeros(0,2);  %list of unique edges defined by two vertices always given from small to large vert ind
-edges.elems = {};  %list of all the elements that share each edge (normally 2 triangles per edge unless something is majorly wrong!)
-
-for i = 1:Mesh.n_elem
+for m = 1:length(Mesh)
     
-    elem = sort( Mesh.elems(i,1:3) );  %corner verts only
+    edges(m).verts = zeros(0,2);  %list of unique edges defined by two vertices always given from small to large vert ind
+    edges(m).elems = {};  %list of all the elements that share each edge (normally 2 triangles per edge unless something is majorly wrong!)
     
-    edges_temp = [elem(1) elem(2); elem(1) elem(3); elem(2) elem(3)]; %always small then big index
-    
-    [ispresent, inds] = ismember(edges_temp, edges.verts,'rows');
-    
-    edges.verts( end+1:end+sum(~ispresent) ,:) = edges_temp(~ispresent,:);
-    
-    if any(ispresent)
-        for j = inds(ispresent)'
-            edges.elems{j,1}(end+1) = i;
+    for i = 1:Mesh(m).n_elem
+        
+        elem = sort( Mesh(m).elems(i,1:3) );  %corner verts only
+        
+        edges_temp = [elem(1) elem(2); elem(1) elem(3); elem(2) elem(3)]; %always small then big index
+        
+        [ispresent, inds] = ismember(edges_temp, edges(m).verts,'rows');
+        
+        edges(m).verts( end+1:end+sum(~ispresent) ,:) = edges_temp(~ispresent,:);
+        
+        if any(ispresent)
+            for j = inds(ispresent)'
+                edges(m).elems{j,1}(end+1) = i;
+            end
         end
-    end
-    
-    for j = 1:sum(~ispresent)
-        edges.elems{end+1,1} = i;
+        
+        for j = 1:sum(~ispresent)
+            edges(m).elems{end+1,1} = i;
+        end
+        
     end
     
 end
 
+
 %%
 % figure
-% 
+%
 % for i = 1:size(edges.verts,1)
 %     vert1 = Mesh.verts(edges.verts(i,1),:);
 %     vert2 = Mesh.verts(edges.verts(i,2),:);

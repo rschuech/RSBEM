@@ -26,10 +26,10 @@ Surface_vis = Mesh;  %initialize as input, all fields will be copied
 for i = 1:length(Surface_vis)
     
     % Surface_vis.verts = Mesh.verts;
-    Surface_vis(i).elems = NaN(4*Mesh(i).n_elem,3);
-    Surface_vis(i).locals = NaN(4*Mesh(i).n_elem,6);
-    Surface_vis(i).xi_eta = NaN(Mesh(i).n_vert,2);
-    Surface_vis(i).xi_eta_elem = NaN(Mesh(i).n_vert,1);
+    Surface_vis(i).elems = NaN(4*Mesh(i).n_elements,3);
+    Surface_vis(i).locals = NaN(4*Mesh(i).n_elements,6);
+    Surface_vis(i).xi_eta = NaN(Mesh(i).n_nodes,2);
+    Surface_vis(i).xi_eta_elem = NaN(Mesh(i).n_nodes,1);
     % Surface_vis.n_vert = NaN;
     % Surface_vis.n_elem = NaN;
     if nargin == 3

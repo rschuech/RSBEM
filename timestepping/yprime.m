@@ -55,20 +55,27 @@ if isempty(varargin)
         
         
         % this used to be a function, rotate_A, but that leads to extra copies of A
-        % or at least the A0 parts of A, so having everything direclty here avoids
+        % or at least the A0 parts of A, so having everything directly here avoids
         % any unnecessary copies at expense of ugliness
         
         for ii = 1:length(Mesh)  % do body, then tail, tensor rotations
             switch ii
                 case 1
                     angles = y(4:6);  %rotate body entries
+                    [rotmat] = A_1_matrix(angles); % using intrinsic z-y-x rotation convention in Goldstein text
                 case 2
-                    angles = [y(4) y(5) y(6)+y(7)];  %rotate tail entries; recall that tail rotation in x is combo of body rotation and tail phase angle
+%                     angles = [y(4) y(5) y(6)+y(7)];  %rotate tail entries; recall that tail rotation in x is combo of body rotation and tail phase angle
                     % note update here, since we used to have y(4:7) = [X Y Z phase] but now
                     % y(4:7) = [Z Y X phase] to follow Goldstein notation
+                    
+                    
+                     rotmat_motor = rotate_arbitrary_vector( Mesh(ii).orientation(:,1), y(7));
+                     rotmat_all = A_1_matrix([y(4) y(5) y(6)]);
+                     
+                     [rotmat] = rotmat_all * rotmat_motor; % compose tail rotation and overall rotations into one rotation matrix
             end
             
-            [rotmat] = A_1_matrix(angles); % using intrinsic z-y-x rotation convention in Goldstein text
+           
             
             %         rotmat = rotation_matrix('z',angles(3)) * rotation_matrix('y',angles(2)) * rotation_matrix('x',angles(1));
             blk = kron(speye(Mesh(ii).n_vert),rotmat);  %using sparse is *a lot* faster than not - I checked.  also, mexed version of this function is slower - turns out shatlab is actually pretty good at some things
