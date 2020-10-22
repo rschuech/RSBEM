@@ -18,7 +18,7 @@ switch integrand_constants.integral_type
     case "reg_stresslet"
         
         [x_interp, phi, hS, n] = T6interp(integrand_constants.element_nodes,xi,eta,integrand_constants.shape_parameters);
-        T = calcT(x_interp,integrand_constants.x_col,integrand_constants.eps2);
+        T = calcT(x_interp,integrand_constants.x_coll,integrand_constants.eps2);
 %         r = x_interp - integrand_constants.refpoint;
         
         %         if any( ismember({'Tn','rTn','phiTn'},varargin{1}) )
@@ -89,7 +89,7 @@ switch integrand_constants.integral_type
 %             %          int((Omega x r)*T*n)
 %             
 %             if varargin{2} % use singularity removal so that (Omega x r - Omega x r_c)Tn = ( Omega x (r - r_c) )Tn
-%                 r_c = integrand_constants.x_col - integrand_constants.refpoint;
+%                 r_c = integrand_constants.x_coll - integrand_constants.refpoint;
 %                 r_mod = r - r_c;
 %             else
 %                 r_mod = r;
@@ -132,7 +132,7 @@ switch integrand_constants.integral_type
         
     case "reg_stokeslet"
         [x_interp, phi, hS] = T6interp(integrand_constants.element_nodes,xi,eta,integrand_constants.shape_parameters);
-        S = calcS(x_interp,integrand_constants.x_col,integrand_constants.eps2);
+        S = calcS(x_interp,integrand_constants.x_coll,integrand_constants.eps2);
         
         out =  hS*[S(1,1)*phi; S(1,2)*phi; S(1,3)*phi; ...
             S(2,1)*phi; S(2,2)*phi; S(2,3)*phi; ...

@@ -1,6 +1,6 @@
-function [Mesh, local_node2global_node] = shift_global_indices(Mesh, local_node2global_node, coincident_submeshes)
+function [local_node2global_node] = shift_global_indices(local_node2global_node, coincident_submeshes, submesh_order)
 
-names = [Mesh.name];
+
 
 % ind = find(strcmp('Tail',names));  %Mesh ind going with tail, if we loaded tail
 % if ~isempty(ind)
@@ -22,7 +22,7 @@ names = [Mesh.name];
 
 for c = 1:length(coincident_submeshes)
   %  if iscell( coincident_submeshes{c} ) % aggregate all submeshes in this coincident group, regardless of geometric entity organization
-        [~,coincident_inds{c}] = ismember([coincident_submeshes{c}{:}], names);  % submesh indices going with each group of coincident submeshes
+        [~,coincident_inds{c}] = ismember([coincident_submeshes{c}{:}], submesh_order);  % submesh indices going with each group of coincident submeshes
         % can't properly test this until I generate some meshes like this!
 %         disp('check results, this is untested!');
 %         pause
@@ -60,7 +60,7 @@ unique_global_inds = [0; unique( vertcat( local_node2global_node{:} ) )]; % uniq
 diffs = diff(unique_global_inds);
 gap_inds = find(diffs > 1);
 local_node2global_node0 = local_node2global_node;  % store copy of original
-Mesh0 = struct('elements',{Mesh.elements}); % store copy of original Mesh elements
+% Mesh0 = struct('elements',{Mesh.elements}); % store copy of original Mesh elements
 
 for i = 1:length(gap_inds)
     for j = 1:length(Mesh)
@@ -75,3 +75,6 @@ end
 
 % now we can be sure that there is no overlap between global indices of different groups of coincident meshes, and also that the list of global indices is
 % consecutive, starting at 1
+
+% finally, shift global indices of network nodes, which we will assume always come after all submeshes and are initially simply 1:n_network_nodes
+% local_node2global_node.networks{1} = local_node2global_node.networks{1} + max(vertcat(local_node2global_node{:}));

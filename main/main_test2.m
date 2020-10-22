@@ -132,10 +132,11 @@ for sweep_i = 1:length(Inputs)
         
     end
     
+
     
-    Mesh0 = Mesh;
+%     Mesh0 = Mesh;
     % eliminate any possible overlap in global indices across coincident submesh groups, and also make sure global indices are consecutive
-    [Mesh, index_mapping.local_node2global_node] = shift_global_indices(Mesh, index_mapping.local_node2global_node, input.coincident_submeshes);
+    [index_mapping.local_node2global_node] = shift_global_indices(index_mapping.local_node2global_node, input.coincident_submeshes, [Mesh.name]);
     
     if strcmp(input.bugtype,'bacteria')  || (  strcmp(input.bugtype,'dino') && strcmp(input.problemtype,'resistance')  )
         %         [Mesh] = global_inds(Mesh); % adds global values to Mesh.indices
@@ -150,7 +151,7 @@ for sweep_i = 1:length(Inputs)
         %         [Mesh] = store_mesh_cons+tants_wrapper(Mesh, temp_input);
         
         [Mesh] = compute_element_based_mesh_parameters(Mesh, input);
-        [node_parameters, index_mapping, Mesh] = compute_node_based_parameters(Mesh,index_mapping, input.parent_topology, input.coincident_submeshes, input.BC_type);
+        [mesh_node_parameters, index_mapping, Mesh] = compute_node_based_parameters(Mesh,index_mapping, input.parent_topology, input.coincident_submeshes, input.BC_type);
     end
     
     
@@ -293,7 +294,7 @@ for sweep_i = 1:length(Inputs)
                 is_intersected = false;
             else
                 nrefines = [2 1];
-                [is_intersected] = submesh_intersections(Mesh,node_parameters,index_mapping,input.accuracy.check_intersections_tolerance, input.accuracy.check_intersections_n_angles,false,input.performance.nthreads,nrefines);  % checks for self-intersection at each angle in parallel
+                [is_intersected] = submesh_intersections(Mesh,mesh_node_parameters,index_mapping,input.accuracy.check_intersections_tolerance, input.accuracy.check_intersections_n_angles,false,input.performance.nthreads,nrefines);  % checks for self-intersection at each angle in parallel
             end
             
             timings.intersection_check = toc(intersection_check_tic);
@@ -334,7 +335,9 @@ for sweep_i = 1:length(Inputs)
     
     
     
-    
+        initialize_network;  % so far, just assuming a single network, but could generalize in future to have multiple "subnetworks" like submeshes
+    % hence, putting it inside a cell in case we have more struct elements and cells here in the future
+%     index_mapping.local_node2global_node.networks = {[1:Network.n_nodes]'};
     
     
     
@@ -377,23 +380,33 @@ for sweep_i = 1:length(Inputs)
     %     assembly_input.performance.DL_singularity_removal = input.performance.DL_singularity_removal;
     assembly_input.rotating_flagellum = input.rotating_flagellum;
     assembly_input.Tail.motorBC = input.Tail.motorBC;
+    assembly_input.Tail.motor_torque = NaN;
+  
+    assembly_input.Tail.submesh_index = 0;
+for i = 1:length(Mesh)
+    if "Tail" == Mesh(i).name  % [Mesh.name] not allowed for code generation, hence this loop
+        assembly_input.Tail.submesh_index = i; break;
+    end
+end
+ assembly_input.Tail.motor_orientation = NaN(3,1);
     
-    assembly_input.accuracy.ignore_interaction = input.accuracy.ignore_interaction;
-    assembly_input.accuracy.integration_tol.stokeslet = input.accuracy.integration_tol.stokeslet;
-    assembly_input.accuracy.integration_tol.stresslet = input.accuracy.integration_tol.stresslet;
-    assembly_input.accuracy.integration_tol.force = input.accuracy.integration_tol.force;
-    assembly_input.accuracy.integration_tol.torque = input.accuracy.integration_tol.torque;
+    assembly_input.accuracy.mesh.ignore_interaction = input.accuracy.mesh.ignore_interaction;
+    assembly_input.accuracy.mesh.integration_tol.stokeslet = input.accuracy.mesh.integration_tol.stokeslet;
+    assembly_input.accuracy.mesh.integration_tol.stresslet = input.accuracy.mesh.integration_tol.stresslet;
+    assembly_input.accuracy.mesh.integration_tol.force = input.accuracy.mesh.integration_tol.force;
+    assembly_input.accuracy.mesh.integration_tol.torque = input.accuracy.mesh.integration_tol.torque;
     % currently the order of dino submeshes when loaded is not
     % carefully controlled so doing this here makes sure vector of eps2
     % matches order of Mesh.name
-    assembly_input.accuracy.eps2 = [];
+    assembly_input.accuracy.mesh.eps2 = [];
     for field = string({Mesh.name})
-        if isfield(input.accuracy.epsilon,field)
-            assembly_input.accuracy.eps2(end+1) = input.accuracy.epsilon.(field)^2;
+        if isfield(input.accuracy.mesh.epsilon,field)
+            assembly_input.accuracy.mesh.eps2(end+1) = input.accuracy.mesh.epsilon.(field)^2;
         else
-            assembly_input.accuracy.eps2(end+1) = input.accuracy.epsilon.default^2;
+            assembly_input.accuracy.mesh.eps2(end+1) = input.accuracy.mesh.epsilon.default^2;
         end
     end
+    assembly_input.accuracy.network.eps2 = input.accuracy.network.epsilon^2;
     
     if ~any([Mesh.is_mesh_rigid])
         assembly_input.performance.rigid_body_matrix_rotation = false; % regardless of what is requested in input, there's no where to use this shortcut
@@ -403,6 +416,15 @@ for sweep_i = 1:length(Inputs)
     
     %     assembly_input.constants.multfactor = input.constants.multfactor;
     assembly_input.constants.mu = input.constants.mu;  %not actually needed for matrix assembly, but needed for yprime() during timestepping interpolation
+   
+%     assembly_input.constants.triangle_integration.reference_nodes = [0 1 0; 0 0 1];  %reference triangle normalized node coords
+% assembly_input.constants.triangle_integration.rule = rule;
+% [assembly_input.constants.triangle_integration.G, assembly_input.constants.triangle_integration.Weights, assembly_input.constants.triangle_integration.PTS] =  SMPRMS( 2, rule );  %always 2 dimensions and constant rule # for all integrals (2nd arg is rule #)
+
+  assembly_input.accuracy.triangle_integration = input.accuracy.triangle_integration;
+    
+    
+    
     assembly_input.performance.debug_mode = input.performance.debug_mode;
     assembly_input.performance.numels_max = input.performance.numels_max;
     assembly_input.performance.verbose = input.performance.verbose;
@@ -413,8 +435,8 @@ for sweep_i = 1:length(Inputs)
         case "resistance"
             assembly_input.Tail.motor_torque = NaN;
             
-            flowcases = {'x','y','z','rx','ry','rz'}; %translations and rotations for each axis
-            
+%             flowcases = {'x','y','z','rx','ry','rz'}; %translations and rotations for each axis
+            flowcases = {'z'};
             %             assembly_input.skip_rigid_integrals = false;
             
             %forced rotations will occur around refpoint
@@ -444,7 +466,7 @@ for sweep_i = 1:length(Inputs)
             % assembly
             Mesh = compute_BCs_mex(BCs.resistance,Mesh,assembly_input); % adds field u = fixed frame velocities at each vert to each submesh
             % each Mesh(i).u is Nx3xM where M is length(flowcases), N is #verts
-            [matrix_props] = gen_matrix_props(input,Mesh, node_parameters);
+            [matrix_props] = gen_matrix_props(input,Mesh, mesh_node_parameters);
             
             
             if matrix_props.n_unknown_u > 0 && size(Mesh(1).u,3) > 1
@@ -472,7 +494,7 @@ for sweep_i = 1:length(Inputs)
                 %                 [ A, ~,A_force,A_torque,debug_info] = matrix_assembly_mex_wrapper( Mesh, matrix_props,assembly_input );
                 
                
-                [ A, A_force, A_torque, RHS, A_motor_torque] = matrix_assembly_mex_wrapper(Mesh,matrix_props,index_mapping,node_parameters,assembly_input);
+                [ A, A_force, A_torque, RHS, A_motor_torque] = matrix_assembly_mex_wrapper(Mesh,Network, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
                 %  toc(resistance_assembly_tic);    % 1079 s for original matrix_assembly_mexed
                 timings.resistance_matrix_assembly = toc(resistance_assembly_tic);
                 if input.performance.verbose

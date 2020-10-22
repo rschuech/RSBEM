@@ -62,13 +62,13 @@ switch input.Tail.motorBC
     case "freq"
         % need to set zero u on body, and relative u due to known freq on tail....
 end
-[matrix_props] = gen_matrix_props(input,Mesh, node_parameters); % this needs to be after setting BCs since we need to know about free slip nodes
+[matrix_props] = gen_matrix_props(input,Mesh, mesh_node_parameters); % this needs to be after setting BCs since we need to know about free slip nodes
 
-index_mapping2 = index_mapping;
-index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
-index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
+% index_mapping2 = index_mapping;
+% index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
+% index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
 
-[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,matrix_props,index_mapping2,node_parameters,assembly_input);
+[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,Network, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
 
             if input.performance.verbose
                 disp(['Matrix assembly wrapper took ',num2str(toc(temp))]);

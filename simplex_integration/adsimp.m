@@ -1,4 +1,4 @@
-function [INTEGRALS, ABS_ERROR_ESTIMATE, NUM_F_EVALS_USED, FL] = adsimp( ndims, VRTS, ncomponents,  max_F_evals, ERROR_ABS, ERROR_REL, RULE ,rule_constants, integrand_constants)
+function [INTEGRALS, ABS_ERROR_ESTIMATE, NUM_F_EVALS_USED, FL] = adsimp( ndims, VRTS, ncomponents,  max_F_evals, ERROR_ABS, ERROR_REL, rule_constants, integrand_constants)
 
 %#codegen
 % coder.extrinsic('tic');
@@ -81,7 +81,7 @@ function [INTEGRALS, ABS_ERROR_ESTIMATE, NUM_F_EVALS_USED, FL] = adsimp( ndims, 
 [~,~,NUM_SUBREGIONS] = size(VRTS);  %NUM_SUBREGIONS is always 1 since we're only integrating 1 triangle at a time (each triangle has it's own shape function anyway)
 
 
-switch RULE
+switch rule_constants.rule
     case 1
         NUM_F_EVALS = 7;
     case 2
@@ -90,6 +90,8 @@ switch RULE
         NUM_F_EVALS = 32;
     case 4
         NUM_F_EVALS = 65;
+    otherwise
+        NUM_F_EVALS = NaN;
 end
 
 [INTEGRALS, ABS_ERROR_ESTIMATE, NUM_F_EVALS_USED, FL] = SMPSAD( ndims, ncomponents,  max_F_evals, ERROR_ABS, ERROR_REL, NUM_F_EVALS, NUM_SUBREGIONS, VRTS, rule_constants, integrand_constants);

@@ -15,6 +15,6 @@ if assembly_input.rotating_flagellum
       motor_orientation = Mesh(tail_ind).orientation(:,1);  % updated to allow for tails attached at an angle - motor rotation axis should always be the centerline axis of the tail
     refpoint = Mesh(tail_ind).refpoints(:,1); %make sure refpoint is somewhere along the axis of motor rotation for free swimming problems involving a motor torque condition
 else
-    motor_orientation = [];  %appease Coder
+    motor_orientation = NaN(3,1);  %appease Coder
     refpoint = Mesh(1).refpoints(:,1); % doesn't really matter where it is, so use body or whatever first submesh is
 end

@@ -1,4 +1,4 @@
-function [A, A_force, A_torque, RHS, A_motor_torque] = matrix_assembly_mex_wrapper(Mesh,matrix_props,index_mapping,node_parameters,assembly_input)
+function [A, A_force, A_torque, RHS, A_motor_torque] = matrix_assembly_mex_wrapper(Mesh,Network, matrix_props,index_mapping,node_parameters,assembly_input)
 %wraps mexed function and assembles full A in native Matlab to avoid
 %ridiculous limit for matrix size in Coder
 
@@ -8,11 +8,11 @@ RHS = zeros(matrix_props.n_rows, matrix_props.n_RHS);
 
 % switch assembly_input.problemtype
 %     case "resistance"
-index_mapping2 = index_mapping;
-index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
-index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
+% index_mapping2 = index_mapping;
+% index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
+% index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
 
-        [A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4,RHS(1:matrix_props.n_collocation*3,:)] = matrix_assembly_mexed(Mesh,matrix_props,index_mapping2,node_parameters,assembly_input);
+        [A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4,RHS(1:matrix_props.n_collocation*3,:)] = matrix_assembly_mex(Mesh,Network, matrix_props,index_mapping,node_parameters,assembly_input);
         
 %     case "mobility"
 %         [A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4,  RHS(1:matrix_props.n_collocation*3,:), debug_info] = matrix_assembly_mex(Mesh,matrix_props,assembly_input);

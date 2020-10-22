@@ -1,4 +1,4 @@
-function [f, varargout] = matrix_solve(input, matrix_props, A, RHS)
+function [out1, u, kinematics] = matrix_solve(input, matrix_props, A, RHS)
 % outputs f, the solution of the matrix equation
 % f includes traction only;
 % kinematic values U, Omega, omega are optionally output for free swimming case
@@ -19,8 +19,7 @@ end
 % now account for value of viscosity  mu, which was assumed to be 1 for
 % matrix solve
 
-%toc(bigtime)
-posttic = tic;
+
 % since now I use appropriate units so that there shouldn't be any scaling woes, mu is accounting for directly within matrix_assembly_mex
 % switch input.problemtype
 %     case 'resistance'  %only solved for traction, only need to correct traction
@@ -50,10 +49,15 @@ if input.problemtype == "mobility"
     if input.rotating_flagellum && input.Tail.motorBC == "torque"
         kinematics.omega = sol(matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + 7, :);
     end
-    varargout = {kinematics};
-else
-    varargout = {};
+%     varargout = {kinematics};
+% else
+%     varargout = {};
 end
 
+if nargout == 1
+    out1 = sol;
+else
+    out1 = f;
+end
 
 %disp(['Solution postprocess took ',num2str(toc(posttic))]);  %takes almost no time

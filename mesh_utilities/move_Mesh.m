@@ -1,4 +1,4 @@
-function [Mesh,rotmat] = move_Mesh(Mesh, movements)
+function [Mesh,mesh_node_parameters, rotmat] = move_Mesh(Mesh, mesh_node_parameters, index_mapping, movements)
 %this simple wrapper is meant to take original mesh (located at origin and not translated
 %or rotated yet) and to update it's position and orientation to the current
 %values via translation and rotations around x,
@@ -12,7 +12,7 @@ function [Mesh,rotmat] = move_Mesh(Mesh, movements)
 %rotations easily done around x, y, z axes
 % http://en.wikipedia.org/wiki/Rotation_matrix    section on General rotations
 
-[Mesh , rotmat] = rotateMesh(Mesh,movements(4:6));
+[Mesh , mesh_node_parameters, rotmat] = rotateMesh(Mesh,mesh_node_parameters, index_mapping,1:length(Mesh),  movements(4:6));
 
 %then, translation
 Mesh = shiftMesh(Mesh, movements(1:3));  %refpoint is initial position, doesn't change (so only input orig Mesh to this function!)

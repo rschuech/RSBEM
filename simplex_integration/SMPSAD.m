@@ -121,6 +121,8 @@ while ( FL > 0 && NUM_F_EVALS_USED + DFCOST + 4*NUM_F_EVALS <= max_F_evals )
     
     [ VRTS, NEW ] =  SMPDFS( ndims, ID, NUM_SUBREGIONS, VRTS ,integrand_constants);
     
+    
+    
     VI = VOL(ID)/NEW;
     %
     %     Apply basic rule, and add new contributions to INTEGRALS and ABS_ERROR_ESTIMATE.

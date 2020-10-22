@@ -130,7 +130,7 @@ inputs.Tail.orientation = "centerline";  % either "centerline" for original choi
 %load sweep_body2.mat %contains swept AR1 and AR2
 
 inputs.bugtype = "bacteria";  %bacteria with rotating tail, or dino with deforming tranverse and longitudinal flagella
-inputs.rotating_flagellum = true;  % does the problem involve a rotating tail, i.e. bacteria?  
+inputs.rotating_flagellum = false;  % does the problem involve a rotating tail, i.e. bacteria?  
 inputs.do_timestepping = false;
 
 switch inputs.bugtype
@@ -168,7 +168,7 @@ switch inputs.bugtype
     case "bacteria"
         %         inputs.problemtype = {"resistance","mobility"}';
         inputs.problemtype = "mobility";
-%         inputs.problemtype = "resistance";
+        inputs.problemtype = "resistance";
 %         inputs.BC_type = [1];
 
 inputs.BC_type.Body = 1;
@@ -199,7 +199,7 @@ inputs.is_mesh_rigid.Tail = true; % boundary integrals over rigid submeshes can 
 % surface must be handled as a unit
 % an "entity" is a single closed or open surface, e.g. here entities are Body1+Body2, Transverse, Appendage, Tail1+Tail2.  
 inputs.coincident_submeshes = { { {"Body" } , {"Tail"} } };  %need gratuitous outer {} here just to avoid trying to do a parameter sweep
-% inputs.coincident_submeshes = { { {"Body" } } }; 
+inputs.coincident_submeshes = { { {"Body" } } }; 
 
 
     case "dino"
@@ -554,7 +554,7 @@ if strcmp(inputs.bugtype, "bacteria")
     %% Tail
     
     %body only or also tail(s)?
-    inputs.include_tail = true;
+    inputs.include_tail = false;
     if inputs.include_tail
         inputs.Tail.tail_type = "normal";  %either "normal" for helical tail or "debug" for dumb body-shaped "tail" with fewer elements
         if strcmp(inputs.Tail.tail_type,"debug")  %override tail geometry parameters with a specific mesh file
@@ -795,6 +795,6 @@ clear sweep* iter_parameters* inputs values fieldpaths
 Inputs.paths.namebase.Body = "curved_rod_AR1_1_AR2_0"
 % Inputs.paths.namebase.Tail = "tail_radius_0.031018_amp_0.402_lambda_2.9032_nlambda_1.49"
 Inputs.paths.namebase.Tail = "longer_tail"
-Inputs.paths.namebase.Tail = "short_tail"
+Inputs.paths.namebase.Tail = "short_tail2"
 Inputs.paths.namebase.full = "shum_test"
 % Inputs.Body.shape = "ellipsoid"

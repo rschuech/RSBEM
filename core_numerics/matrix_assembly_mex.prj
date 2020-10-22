@@ -1,7 +1,7 @@
 <deployment-project plugin="plugin.coder" plugin-version="R2018b">
   <configuration build-checksum="682846617" file="C:\Hull\git_code2\core_numerics\matrix_assembly_mex.prj" location="C:\Hull\git_code2\core_numerics" name="matrix_assembly_mex" target="target.unifiedcoder" target-name="MATLAB Coder">
     <profile key="profile.mex">
-      <param.BuiltInstrumentedMex>false</param.BuiltInstrumentedMex>
+      <param.BuiltInstrumentedMex />
       <param.RanInstrumentedMex>false</param.RanInstrumentedMex>
       <param.WorkingFolder>option.WorkingFolder.Project</param.WorkingFolder>
       <param.SpecifiedWorkingFolder />
@@ -20,7 +20,7 @@
       <param.RowMajor>option.RowMajor.ColumnMajor</param.RowMajor>
       <param.HighlightPotentialRowMajorIssues>true</param.HighlightPotentialRowMajorIssues>
       <param.PreserveArrayDimensions>false</param.PreserveArrayDimensions>
-      <param.EliminateSingleDimensions>false</param.EliminateSingleDimensions>
+      <param.EliminateSingleDimensions />
       <param.StackUsageMax>200000</param.StackUsageMax>
       <param.FilePartitionMethod>option.FilePartitionMethod.MapMFileToCFile</param.FilePartitionMethod>
       <param.GenerateComments>true</param.GenerateComments>
@@ -36,7 +36,7 @@
       <param.VerificationMode>option.VerificationMode.None</param.VerificationMode>
       <param.VerificationStatus>option.VerificationStatus.Passed</param.VerificationStatus>
       <param.EnableMexProfiling>false</param.EnableMexProfiling>
-      <var.BuiltWithMexProfiling>false</var.BuiltWithMexProfiling>
+      <var.BuiltWithMexProfiling />
       <param.CustomSourceCode />
       <param.CustomHeaderCode />
       <param.CustomInitializer />
@@ -64,11 +64,11 @@
       <param.ConstantInputs>option.ConstantInputs.CheckValues</param.ConstantInputs>
       <param.EnableCRICodeCoverage>true</param.EnableCRICodeCoverage>
       <param.EnableJIT>false</param.EnableJIT>
-      <param.EnableJITSilentBailOut>false</param.EnableJITSilentBailOut>
+      <param.EnableJITSilentBailOut />
       <param.CheckForIssuesJIT>true</param.CheckForIssuesJIT>
-      <param.EnableGitSupport>false</param.EnableGitSupport>
-      <param.EnableAutoCommit>false</param.EnableAutoCommit>
-      <param.RepositoryStyle>option.RepositoryStyle.Auto</param.RepositoryStyle>
+      <param.EnableGitSupport />
+      <param.EnableAutoCommit />
+      <param.RepositoryStyle />
       <unset>
         <param.BuiltInstrumentedMex />
         <param.RanInstrumentedMex />
@@ -156,7 +156,7 @@
       <param.RowMajor>option.RowMajor.ColumnMajor</param.RowMajor>
       <param.HighlightPotentialRowMajorIssues>true</param.HighlightPotentialRowMajorIssues>
       <param.PreserveArrayDimensions>false</param.PreserveArrayDimensions>
-      <param.EliminateSingleDimensions>false</param.EliminateSingleDimensions>
+      <param.EliminateSingleDimensions />
       <param.StackUsageMax>200000</param.StackUsageMax>
       <param.MultiInstanceCode />
       <param.FilePartitionMethod>option.FilePartitionMethod.MapMFileToCFile</param.FilePartitionMethod>
@@ -315,9 +315,9 @@
       <param.GenerateDefaultInSwitch />
       <param.EnableTraceability />
       <param.UseECoderFeatures>false</param.UseECoderFeatures>
-      <param.EnableGitSupport>false</param.EnableGitSupport>
-      <param.EnableAutoCommit>false</param.EnableAutoCommit>
-      <param.RepositoryStyle>option.RepositoryStyle.Auto</param.RepositoryStyle>
+      <param.EnableGitSupport />
+      <param.EnableAutoCommit />
+      <param.RepositoryStyle />
       <param.psCustomPrjState />
       <param.psCustomProjectFile />
       <param.psCheckConfValue />
@@ -847,16 +847,16 @@
       </unset>
     </profile>
     <param.objective>option.objective.c</param.objective>
-    <param.WorkflowStep>generateCode</param.WorkflowStep>
+    <param.WorkflowStep>inputTypes</param.WorkflowStep>
     <param.TestSnippets>
       <item>[A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4,RHS(1:matrix_props.n_collocation*3,:)] = matrix_assembly_mex(Mesh,matrix_props,index_mapping2,node_parameters,assembly_input);</item>
       <item>[A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4,RHS(1:matrix_props.n_collocation*3,:)] = matrix_assembly_mex(Mesh,matrix_props,index_mapping,node_parameters,assembly_input);</item>
       <item>[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,matrix_props,index_mapping,node_parameters,assembly_input);</item>
     </param.TestSnippets>
-    <param.ExternalFcnMajority>column</param.ExternalFcnMajority>
+    <param.ExternalFcnMajority />
     <param.UseGlobals>option.UseGlobals.No</param.UseGlobals>
     <param.outputfile>${PROJECT_ROOT}\matrix_assembly_mexed.mexw64</param.outputfile>
-    <param.version>R2012a</param.version>
+    <param.version />
     <param.HasECoderFeatures>false</param.HasECoderFeatures>
     <param.HasGpuCoder>true</param.HasGpuCoder>
     <var.HasNeuralNetworkToolbox>true</var.HasNeuralNetworkToolbox>
@@ -864,11 +864,11 @@
     <param.grt.mainhtml />
     <param.CallGeneratedCodeFromTest>true</param.CallGeneratedCodeFromTest>
     <param.AutoInferDefaultFile />
-    <param.AutoInferUseVariableSize>false</param.AutoInferUseVariableSize>
-    <param.AutoInferUseUnboundedSize>false</param.AutoInferUseUnboundedSize>
-    <param.AutoInferVariableSizeThreshold>1024</param.AutoInferVariableSizeThreshold>
-    <param.AutoInferUnboundedSizeThreshold>2048</param.AutoInferUnboundedSizeThreshold>
-    <param.EnableFixedPointStep>false</param.EnableFixedPointStep>
+    <param.AutoInferUseVariableSize />
+    <param.AutoInferUseUnboundedSize />
+    <param.AutoInferVariableSizeThreshold />
+    <param.AutoInferUnboundedSizeThreshold />
+    <param.EnableFixedPointStep />
     <param.EnableScreener>true</param.EnableScreener>
     <param.AnnotationChecksum>4277299684</param.AnnotationChecksum>
     <var.LegacyTarget />
@@ -885,14 +885,14 @@
     <var.lastCfiTestSnippet>[A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4,RHS(1:matrix_props.n_collocation*3,:)] = matrix_assembly_mex(Mesh,matrix_props,index_mapping2,node_parameters,assembly_input);</var.lastCfiTestSnippet>
     <var.outdatedOnRestore>false</var.outdatedOnRestore>
     <var.lastUserSourceChecksum>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;checksum&gt;&lt;includedFiles&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\calcS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\calcT.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\get_rotational_references.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\integrand.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\matrix_assembly_mex.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\mesh_utilities\T6interp.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\misc_utilities\crossprod.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\adsimp.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPDFS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPRMS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPRUL.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPSAD.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPSMS.m&lt;/file&gt;&lt;/includedFiles&gt;&lt;value&gt;284452929&lt;/value&gt;&lt;/checksum&gt;</var.lastUserSourceChecksum>
-    <var.sourceSetState>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;sourceModel&gt;&lt;primarySourceFiles&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\calcS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\calcT.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\get_rotational_references.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\integrand.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\matrix_assembly_mex.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\mesh_utilities\T6interp.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\misc_utilities\crossprod.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\adsimp.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPDFS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPRMS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPRUL.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPSAD.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPSMS.m&lt;/file&gt;&lt;/primarySourceFiles&gt;&lt;fixedPointSourceFiles/&gt;&lt;fixedPointSourceRegistered&gt;false&lt;/fixedPointSourceRegistered&gt;&lt;fixedPointSourceSelected&gt;false&lt;/fixedPointSourceSelected&gt;&lt;/sourceModel&gt;</var.sourceSetState>
+    <var.sourceSetState>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;sourceModel&gt;&lt;primarySourceFiles&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\boundary_integrals.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\calcS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\calcT.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\get_rotational_references.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\integrand.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\core_numerics\matrix_assembly_mex.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\mesh_utilities\T6interp.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\misc_utilities\crossprod.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\adsimp.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPDFS.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPRUL.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPSAD.m&lt;/file&gt;&lt;file&gt;C:\Hull\git_code2\simplex_integration\SMPSMS.m&lt;/file&gt;&lt;/primarySourceFiles&gt;&lt;fixedPointSourceFiles/&gt;&lt;fixedPointSourceRegistered&gt;false&lt;/fixedPointSourceRegistered&gt;&lt;fixedPointSourceSelected&gt;false&lt;/fixedPointSourceSelected&gt;&lt;/sourceModel&gt;</var.sourceSetState>
     <param.forceMexBuild>false</param.forceMexBuild>
-    <param.NoDefaultJIT>false</param.NoDefaultJIT>
+    <param.NoDefaultJIT />
     <param.configImportActive>false</param.configImportActive>
     <var.isGpuCoder>false</var.isGpuCoder>
     <var.notGpuCoder>true</var.notGpuCoder>
     <var.boundToGui>true</var.boundToGui>
-    <var.isConfigDialog>false</var.isConfigDialog>
+    <var.isConfigDialog />
     <var.ecoderEnabled>false</var.ecoderEnabled>
     <param.mex.outputfile>matrix_assembly_mexed</param.mex.outputfile>
     <param.grt.outputfile>matrix_assembly_mex</param.grt.outputfile>
@@ -904,16 +904,16 @@
     <param.CppPreserveClasses>true</param.CppPreserveClasses>
     <param.gpu.Enabled>false</param.gpu.Enabled>
     <param.gpu.KernelNamePrefix />
-    <param.gpu.SelectCudaDevice>-1</param.gpu.SelectCudaDevice>
-    <param.gpu.MaxKernelDepth>0</param.gpu.MaxKernelDepth>
+    <param.gpu.SelectCudaDevice />
+    <param.gpu.MaxKernelDepth />
     <param.gpu.MallocMode>discrete</param.gpu.MallocMode>
-    <param.gpu.MallocThreshold>200</param.gpu.MallocThreshold>
-    <param.gpu.StackLimitPerThread>1024</param.gpu.StackLimitPerThread>
+    <param.gpu.MallocThreshold />
+    <param.gpu.StackLimitPerThread />
     <param.gpu.EnableCUBLAS>true</param.gpu.EnableCUBLAS>
     <param.gpu.EnableCUSOLVER>true</param.gpu.EnableCUSOLVER>
     <param.gpu.EnableCUFFT>true</param.gpu.EnableCUFFT>
     <param.gpu.Benchmarking>false</param.gpu.Benchmarking>
-    <param.gpu.SafeBuild>false</param.gpu.SafeBuild>
+    <param.gpu.SafeBuild />
     <param.gpu.ComputeCapability>3.5</param.gpu.ComputeCapability>
     <param.gpu.CustomComputeCapability />
     <param.gpu.CompilerFlags />
@@ -937,20 +937,20 @@
     <param.UsePreconditions>false</param.UsePreconditions>
     <param.FeatureFlags />
     <param.FixedPointMode>option.FixedPointMode.None</param.FixedPointMode>
-    <param.AutoScaleLoopIndexVariables>false</param.AutoScaleLoopIndexVariables>
+    <param.AutoScaleLoopIndexVariables />
     <param.ComputedFixedPointData />
     <param.UserFixedPointData />
-    <param.DefaultWordLength>16</param.DefaultWordLength>
-    <param.DefaultFractionLength>4</param.DefaultFractionLength>
-    <param.FixedPointSafetyMargin>0</param.FixedPointSafetyMargin>
-    <param.FixedPointFimath>fimath('RoundingMethod', 'Floor', 'OverflowAction', 'Wrap', 'ProductMode', 'FullPrecision', 'MaxProductWordLength', 128, 'SumMode', 'FullPrecision', 'MaxSumWordLength', 128)</param.FixedPointFimath>
-    <param.FixedPointTypeSource>option.FixedPointTypeSource.SimAndDerived</param.FixedPointTypeSource>
+    <param.DefaultWordLength />
+    <param.DefaultFractionLength />
+    <param.FixedPointSafetyMargin />
+    <param.FixedPointFimath />
+    <param.FixedPointTypeSource />
     <param.StaticAnalysisTimeout />
-    <param.StaticAnalysisGlobalRangesOnly>false</param.StaticAnalysisGlobalRangesOnly>
-    <param.LogAllIOValues>false</param.LogAllIOValues>
-    <param.DetectOverflows>false</param.DetectOverflows>
-    <param.LogHistogram>false</param.LogHistogram>
-    <param.ShowCoverage>true</param.ShowCoverage>
+    <param.StaticAnalysisGlobalRangesOnly />
+    <param.LogAllIOValues />
+    <param.DetectOverflows />
+    <param.LogHistogram />
+    <param.ShowCoverage />
     <param.ExcludedFixedPointVerificationFiles />
     <param.ExcludedFixedPointSimulationFiles />
     <param.InstrumentedBuildChecksum />
@@ -959,16 +959,16 @@
     <param.FixedPointValidationChecksum />
     <param.FixedPointSourceCodeChecksum />
     <param.FixedPointFunctionReplacements />
-    <param.OptimizeWholeNumbers>true</param.OptimizeWholeNumbers>
-    <param.ContainerTypes>false</param.ContainerTypes>
+    <param.OptimizeWholeNumbers />
+    <param.ContainerTypes />
     <param.GeneratedFixedPointFileSuffix>_fixpt</param.GeneratedFixedPointFileSuffix>
     <param.PlotFunction />
-    <param.SDIPlot>false</param.SDIPlot>
-    <param.EnableCodeEfficiencyChecks>false</param.EnableCodeEfficiencyChecks>
-    <param.DefaultFixedPointSignedness>option.DefaultFixedPointSignedness.Automatic</param.DefaultFixedPointSignedness>
-    <param.FixedPointTypeProposalMode>option.FixedPointTypeProposalMode.ProposeFractionLengths</param.FixedPointTypeProposalMode>
-    <param.EnableFixedPointStep>false</param.EnableFixedPointStep>
-    <var.lastFixedPointAction>option.fixedPointAction.none</var.lastFixedPointAction>
+    <param.SDIPlot />
+    <param.EnableCodeEfficiencyChecks />
+    <param.DefaultFixedPointSignedness />
+    <param.FixedPointTypeProposalMode />
+    <param.EnableFixedPointStep />
+    <var.lastFixedPointAction />
     <var.lastSimContext />
     <var.lastVerifyContext />
     <param.fpDataRoot />
@@ -976,9 +976,9 @@
     <var.snapshotChecksum />
     <param.fpLastConvertChecksum />
     <var.functionBlockSid />
-    <param.fptSignedness>false</param.fptSignedness>
-    <var.FixedPointAnalysisMode>option.FixedPointAnalysisMode.Sim</var.FixedPointAnalysisMode>
-    <param.FixedPointUseDesignRanges>false</param.FixedPointUseDesignRanges>
+    <param.fptSignedness />
+    <var.FixedPointAnalysisMode />
+    <param.FixedPointUseDesignRanges />
     <unset>
       <param.objective />
       <param.ExternalFcnMajority />
@@ -1097,7 +1097,7 @@
     </unset>
     <fileset.entrypoints>
       <file custom-data-expanded="false" value="${PROJECT_ROOT}\matrix_assembly_mex.m">
-        <Marker>1601665876532</Marker>
+        <Marker>1602530094800</Marker>
       </file>
     </fileset.entrypoints>
     <fileset.testbench />
@@ -1126,78 +1126,79 @@
             <Field Name="refpoints" typeId="8" />
             <Field Name="u" typeId="11" />
           </Input>
-          <Input Name="matrix_props" typeId="12">
+          <Input Name="Network" typeId="12" />
+          <Input Name="matrix_props" typeId="13">
             <Field Name="n_collocation" typeId="1" />
             <Field Name="n_unknown_u" typeId="1" />
             <Field Name="n_rows" typeId="1" />
             <Field Name="n_cols" typeId="1" />
             <Field Name="n_RHS" typeId="1" />
           </Input>
-          <Input Name="index_mapping" typeId="12">
-            <Field Name="local_node2global_node" typeId="13">
-              <Field Name="indices" typeId="14" />
-            </Field>
-            <Field Name="global_node2local_node" typeId="13">
+          <Input Name="index_mapping" typeId="13">
+            <Field Name="local_node2global_node" typeId="14">
               <Field Name="indices" typeId="15" />
             </Field>
-            <Field Name="global_node2global_u" typeId="14" />
-            <Field Name="global_u2global_node" typeId="14" />
+            <Field Name="global_node2local_node" typeId="14">
+              <Field Name="indices" typeId="16" />
+            </Field>
+            <Field Name="global_node2global_u" typeId="15" />
+            <Field Name="global_u2global_node" typeId="15" />
           </Input>
-          <Input Name="node_parameters" typeId="12">
-            <Field Name="node_type" typeId="14" />
-            <Field Name="normals_avg" typeId="16" />
-            <Field Name="tangents_avg" typeId="17" />
-            <Field Name="BC_type" typeId="14" />
+          <Input Name="mesh_node_parameters" typeId="13">
+            <Field Name="node_type" typeId="15" />
+            <Field Name="normals_avg" typeId="17" />
+            <Field Name="tangents_avg" typeId="18" />
+            <Field Name="BC_type" typeId="15" />
           </Input>
-          <Input Name="assembly_input" typeId="12">
-            <Field Name="performance" typeId="12">
+          <Input Name="assembly_input" typeId="13">
+            <Field Name="performance" typeId="13">
               <Field Name="nthreads" typeId="1" />
-              <Field Name="eliminate_DL" typeId="18" />
-              <Field Name="DL_singularity_removal" typeId="18" />
+              <Field Name="eliminate_DL" typeId="19" />
+              <Field Name="DL_singularity_removal" typeId="19" />
               <Field Name="rigid_body_matrix_rotation" typeId="6" />
               <Field Name="debug_mode" typeId="6" />
-              <Field Name="numels_max" typeId="19" />
+              <Field Name="numels_max" typeId="20" />
               <Field Name="verbose" typeId="6" />
             </Field>
             <Field Name="problemtype" typeId="4">
-              <Field Name="{1}" typeId="20" />
+              <Field Name="{1}" typeId="21" />
             </Field>
             <Field Name="rotating_flagellum" typeId="6" />
-            <Field Name="Tail" typeId="12">
+            <Field Name="Tail" typeId="13">
               <Field Name="motorBC" typeId="4">
-                <Field Name="{1}" typeId="20" />
+                <Field Name="{1}" typeId="21" />
               </Field>
               <Field Name="motor_torque" typeId="1" />
             </Field>
-            <Field Name="accuracy" typeId="12">
+            <Field Name="accuracy" typeId="13">
               <Field Name="ignore_interaction" typeId="6" />
-              <Field Name="integration_tol" typeId="12">
-                <Field Name="stokeslet" typeId="12">
+              <Field Name="integration_tol" typeId="13">
+                <Field Name="stokeslet" typeId="13">
                   <Field Name="abstol" typeId="1" />
                   <Field Name="reltol" typeId="1" />
                   <Field Name="maxevals" typeId="1" />
                 </Field>
-                <Field Name="stresslet" typeId="12">
-                  <Field Name="phiTn" typeId="12">
+                <Field Name="stresslet" typeId="13">
+                  <Field Name="phiTn" typeId="13">
                     <Field Name="abstol" typeId="1" />
                     <Field Name="reltol" typeId="1" />
                     <Field Name="maxevals" typeId="1" />
                   </Field>
                 </Field>
-                <Field Name="force" typeId="12">
+                <Field Name="force" typeId="13">
                   <Field Name="abstol" typeId="1" />
                   <Field Name="reltol" typeId="1" />
                   <Field Name="maxevals" typeId="1" />
                 </Field>
-                <Field Name="torque" typeId="12">
+                <Field Name="torque" typeId="13">
                   <Field Name="abstol" typeId="1" />
                   <Field Name="reltol" typeId="1" />
                   <Field Name="maxevals" typeId="1" />
                 </Field>
               </Field>
-              <Field Name="eps2" typeId="21" />
+              <Field Name="eps2" typeId="22" />
             </Field>
-            <Field Name="constants" typeId="12">
+            <Field Name="constants" typeId="13">
               <Field Name="mu" typeId="1" />
             </Field>
           </Input>
@@ -1309,6 +1310,15 @@
               <Sparse>false</Sparse>
             </type>
             <type typeId="12">
+              <Class>&lt;Undefined&gt;</Class>
+              <Size>1 x 1</Size>
+              <Value />
+              <InitialValue />
+              <UserDefined>false</UserDefined>
+              <Complex>false</Complex>
+              <Sparse>false</Sparse>
+            </type>
+            <type typeId="13">
               <Class>struct</Class>
               <Size>1 x 1</Size>
               <Value />
@@ -1319,7 +1329,7 @@
               <HeaderFile />
               <Alignment>-1</Alignment>
             </type>
-            <type typeId="13">
+            <type typeId="14">
               <Class>struct</Class>
               <Size>:inf x 1</Size>
               <Value />
@@ -1330,18 +1340,9 @@
               <HeaderFile />
               <Alignment>-1</Alignment>
             </type>
-            <type typeId="14">
-              <Class>double</Class>
-              <Size>:inf x 1</Size>
-              <Value />
-              <InitialValue />
-              <UserDefined>true</UserDefined>
-              <Complex>false</Complex>
-              <Sparse>false</Sparse>
-            </type>
             <type typeId="15">
               <Class>double</Class>
-              <Size>:inf x 4</Size>
+              <Size>:inf x 1</Size>
               <Value />
               <InitialValue />
               <UserDefined>true</UserDefined>
@@ -1350,7 +1351,7 @@
             </type>
             <type typeId="16">
               <Class>double</Class>
-              <Size>:inf x 3</Size>
+              <Size>:inf x 4</Size>
               <Value />
               <InitialValue />
               <UserDefined>true</UserDefined>
@@ -1359,7 +1360,7 @@
             </type>
             <type typeId="17">
               <Class>double</Class>
-              <Size>:inf x 3 x 2</Size>
+              <Size>:inf x 3</Size>
               <Value />
               <InitialValue />
               <UserDefined>true</UserDefined>
@@ -1367,6 +1368,15 @@
               <Sparse>false</Sparse>
             </type>
             <type typeId="18">
+              <Class>double</Class>
+              <Size>:inf x 3 x 2</Size>
+              <Value />
+              <InitialValue />
+              <UserDefined>true</UserDefined>
+              <Complex>false</Complex>
+              <Sparse>false</Sparse>
+            </type>
+            <type typeId="19">
               <Class>logical</Class>
               <Size>1 x :inf</Size>
               <Value />
@@ -1374,7 +1384,7 @@
               <UserDefined>true</UserDefined>
               <Sparse>false</Sparse>
             </type>
-            <type typeId="19">
+            <type typeId="20">
               <Class>int32</Class>
               <Size>1 x 1</Size>
               <Value />
@@ -1382,14 +1392,14 @@
               <UserDefined>false</UserDefined>
               <Complex>false</Complex>
             </type>
-            <type typeId="20">
+            <type typeId="21">
               <Class>char</Class>
               <Size>1 x :inf</Size>
               <Value />
               <InitialValue />
               <UserDefined>true</UserDefined>
             </type>
-            <type typeId="21">
+            <type typeId="22">
               <Class>double</Class>
               <Size>1 x :inf</Size>
               <Value />

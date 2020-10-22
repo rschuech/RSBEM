@@ -1,5 +1,5 @@
-function [node_parameters, index_mapping, Mesh] = compute_node_based_parameters(Mesh,index_mapping, parent_topologies, coincident_submeshes, BC_type)
-% creates node_parameters containing node-specific parameters e.g. avg normal, avg tangents, solid angle
+function [mesh_node_parameters, index_mapping, Mesh] = compute_node_based_parameters(Mesh,index_mapping, parent_topologies, coincident_submeshes, BC_type)
+% creates mesh_node_parameters containing node-specific parameters e.g. avg normal, avg tangents, solid angle
 % also add to index_mappings: global2local conversions as well as mappings for unknown u at free slip nodes
 % also add to Mesh:  solid angle (ordinarily we'd only need an overall solid angle for each global node but if one decides to only eliminate DL on some but
 % not all entities that share a node, we need solid angles for each isolated entity considered alone
@@ -10,10 +10,11 @@ function [node_parameters, index_mapping, Mesh] = compute_node_based_parameters(
 % while we're here, also initialize solid angle fields of Mesh
 
 % n_global_nodes = length(index_mapping.global_node2local_node);
+% n_global_nodes = max( vertcat( index_mapping.local_node2global_node{:} , index_mapping.local_node2global_node.networks{:}) );
 n_global_nodes = max( vertcat( index_mapping.local_node2global_node{:} ) );
-
+% index_mapping.global_node_type = NaN(n_global_nodes,1); % 1 for mesh, 2 for 1D sticklet / segment (to be added), 3 for 0D network nodes
 index_mapping.global_node2local_node = cell( n_global_nodes , 1 );
-% index_mapping.global_u2global_node = NaN(  % difficult to initialize since we don't know exactly how many unknown u there are yet I guess
+
     
 for submesh_ind = 1:length(index_mapping.local_node2global_node)  %submeshes
     
@@ -22,21 +23,37 @@ for submesh_ind = 1:length(index_mapping.local_node2global_node)  %submeshes
         [element_inds, position_inds] = find( Mesh(submesh_ind).elements == local_node_ind );
         
         % global2local is a n_global_nodes cell array, each cell is a matrix with rows = submesh, local node ind, element ind, position in element
+        %  XXXX not doing this anymore        entity type is 1 (submesh), 2 (sticklet or 1D element, to be added), 3 (0D network nodes)
         index_mapping.global_node2local_node{global_ind}(end+1:end+size(element_inds,1),:) = [repmat([submesh_ind, local_node_ind],size(element_inds,1),1), element_inds, position_inds];
+%         index_mapping.global_node_type(global_ind) = 1;
     end
     
     Mesh(submesh_ind).solid_angle = NaN(Mesh(submesh_ind).n_nodes,1);
 end
 
 
+% for network_ind = 1:length(index_mapping.local_node2global_node.networks)
+%     for local_node_ind = 1:length(index_mapping.local_node2global_node.networks{network_ind})
+%           global_ind = index_mapping.local_node2global_node.networks{network_ind}(local_node_ind);
+%            index_mapping.global_node2local_node{global_ind}(end+1,:) = [network_ind, local_node_ind];
+%     index_mapping.global_node_type(global_ind) = 3;
+%     end
+% 
+% end
 
+% here, we will only make matrices as big as needed for submeshes since these parameters aren't needed / don't exist for 1D or 0D entity types
+% n_global_submesh_nodes = max( vertcat( index_mapping.local_node2global_node{:}));
+% mesh_node_parameters.global_indices = (1:n_global_submesh_nodes)'; % assuming global inds of submeshes start at 1 
+% and are consecutive!
 
-node_parameters.node_type = NaN(n_global_nodes,1); % 1 for vertex node, 2 for edge (midpoint) node on the curved triangular elements
-% node_parameters.solid_angle = NaN(n_global_nodes,1);
-node_parameters.normals_avg = NaN(n_global_nodes,3);
-node_parameters.tangents_avg = NaN(n_global_nodes,3,2);
-node_parameters.BC_type = NaN(n_global_nodes, 1);
+mesh_node_parameters.node_type = NaN(n_global_nodes,1); % 1 for vertex node, 2 for edge (midpoint) node on the curved triangular elements
+% mesh_node_parameters.solid_angle = NaN(n_global_nodes,1);
+mesh_node_parameters.normals_avg = NaN(n_global_nodes,3);
+mesh_node_parameters.tangents_avg = NaN(n_global_nodes,3,2);
+mesh_node_parameters.BC_type = NaN(n_global_nodes, 1);
+
 index_mapping.global_node2global_u = zeros(n_global_nodes,1);
+index_mapping.global_u2global_node = NaN(0,1);  % difficult to fully initialize since we don't know exactly how many unknown u there are yet I guess
 
 names = [Mesh.name];
 topologies = strings(length(names),1); BC_types = NaN(length(names),1);
@@ -59,6 +76,8 @@ end
 
 for global_node_ind = 1:n_global_nodes
     
+%     global_node_ind = mesh_node_parameters.global_indices(n); % allow for indices of mesh_node_parameters to be different from global indices accounting for
+    % all entity types including 1D, 0D groups of nodes
     
     n_local_entries = size(index_mapping.global_node2local_node{global_node_ind},1);
     normals = NaN(n_local_entries,3);
@@ -68,10 +87,10 @@ for global_node_ind = 1:n_global_nodes
     % decide what BC to impose for this global node
     if any( BC_types( unique(index_mapping.global_node2local_node{global_node_ind}(:,1)) ) == 1 ) % is the node a member of at least one no-slip submesh?
         
-        node_parameters.BC_type(global_node_ind, 1) = 1; % arbitrarily decide that the node is then no-slip (even if also a member of free-slip submeshes)
+        mesh_node_parameters.BC_type(global_node_ind, 1) = 1; % arbitrarily decide that the node is then no-slip (even if also a member of free-slip submeshes)
 %         index_mapping.global_node2global_u(global_node_ind) = 0; % this global node doesn't have an unknown u
     else
-        node_parameters.BC_type(global_node_ind, 1) = 2; % if node is only a member of free-slip submeshes, it must obviously be free-slip
+        mesh_node_parameters.BC_type(global_node_ind, 1) = 2; % if node is only a member of free-slip submeshes, it must obviously be free-slip
         index_mapping.global_node2global_u(global_node_ind) = max( index_mapping.global_node2global_u ) + 1;
         index_mapping.global_u2global_node( index_mapping.global_node2global_u(global_node_ind) , 1 ) = global_node_ind;
     end
@@ -116,11 +135,11 @@ for global_node_ind = 1:n_global_nodes
         switch node_position
             case {1 2 3} % triangle verts
                 [~, ~, ~,  normals(local_entry,:), tangents_along_edge] = T6interp(node_coords,xi_eta(1),xi_eta(2),shape_parameters);
-                node_parameters.node_type(global_node_ind) = 1; % vertex node (will get overwritten with same value multiple times, who cares)
+                mesh_node_parameters.node_type(global_node_ind) = 1; % vertex node (will get overwritten with same value multiple times, who cares)
                 angles(local_entry,1) = acos(dot( tangents_along_edge(:,1) , tangents_along_edge(:,2 )));
             case {4 5 6} % triangle edge midpoints
                 [~, ~, ~,  normals(local_entry,:), ~] = T6interp(node_coords,xi_eta(1),xi_eta(2),shape_parameters);
-                node_parameters.node_type(global_node_ind) = 2; % midpoint node (will get overwritten with same value multiple times, who cares)
+                mesh_node_parameters.node_type(global_node_ind) = 2; % midpoint node (will get overwritten with same value multiple times, who cares)
                 angles(local_entry,1) = NaN;
         end
         
@@ -140,20 +159,20 @@ for global_node_ind = 1:n_global_nodes
         % here we are considering elements on each submesh separately, so a node shared by multiple submeshes will have multiple avg normals etc
         temp = mean( normals , 1 ) ;
     end
-    node_parameters.normals_avg(global_node_ind,:) = temp / sqrt(sum(temp.^2 , 2));
+    mesh_node_parameters.normals_avg(global_node_ind,:) = temp / sqrt(sum(temp.^2 , 2));
     
     
     % there's nothing "wrong" with along-element-edge tangents that can be output from T6interp but if we want an "avg" tangent at a corner point, it
     % isn't straightforward to calculate it from those tangents (e.g. for very symmetric element arrangements, an average of all tangents can yield
     % nearly zero due to cancellations) so instead, compute tangents from just the avg normal
-    tangents = eye(3) - node_parameters.normals_avg(global_node_ind,:)' * node_parameters.normals_avg(global_node_ind,:); % Dave, or common knowledge?...
+    tangents = eye(3) - mesh_node_parameters.normals_avg(global_node_ind,:)' * mesh_node_parameters.normals_avg(global_node_ind,:); % Dave, or common knowledge?...
     tangents = tangents ./ sqrt(sum(tangents.^2,2));
     % the above yields 3 tangent vectors.  choose the pair that are most orthogonal to each other for giggles (as long as the angle between them isn't
     % nearly zero, it's fine for the purposes of imposing a free-slip BC)
     dots = [dot(tangents(3,:),tangents(2,:)); dot(tangents(1,:),tangents(3,:)); dot(tangents(2,:),tangents(1,:))];
     [~,ind] = min(abs(dots));
     tangents(ind,:) = []; % delete the extra tangent vector
-    node_parameters.tangents_avg(global_node_ind,:,:) = tangents'; % 3rd dim is for the two tangent vectors
+    mesh_node_parameters.tangents_avg(global_node_ind,:,:) = tangents'; % 3rd dim is for the two tangent vectors
     
     % solid angle is calculated according to general method in following, p. 24
     % Topping, B. H. V., J. Muylle, R. Putanowicz, and P. Ivanyi. Finite Element Mesh Generation. Paul & Company Pub Consortium, 2004.
@@ -256,7 +275,7 @@ for global_node_ind = 1:n_global_nodes
             end
         end
         %     else % this global node is only part of open submeshes, which by definition take up (nearly) zero fluid volume, so phi = 4*pi (?)
-        %         node_parameters.solid_angle(global_node_ind,1) = 4*pi; % current thinking is for an infinitely thin (or eps*2 width) sheet, solid angle should be a full sphere,
+        %         mesh_node_parameters.solid_angle(global_node_ind,1) = 4*pi; % current thinking is for an infinitely thin (or eps*2 width) sheet, solid angle should be a full sphere,
         %         %                 no fluid volume obscured by geometry?  Doesn't matter in the end since solid angle for sheets cancels out in the BIE.
         %     end
         

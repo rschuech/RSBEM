@@ -1,4 +1,4 @@
-function [A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4, RHS_BIE] = matrix_assembly_mex(Mesh,matrix_props,index_mapping,node_parameters,assembly_input)
+function [A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4, RHS_BIE] = matrix_assembly_mex(Mesh,Network, matrix_props,index_mapping,mesh_node_parameters,assembly_input)
 
 %assembles all entries of A_BIE matrix block for both resistance problem and force-free cases
 
@@ -8,14 +8,9 @@ function [A_BIE_1,  A_BIE_2,  A_BIE_3,  A_BIE_4, RHS_BIE] = matrix_assembly_mex(
 %due to A_BIE being too big.  As a workaround, we insert A_BIE_1 - 4 into full A in
 %matrix_assembly_mex_wrapper, in native Matlab, which has no dumb
 %limitation on matrix size.
+BI_parameters = assembly_input;
+[refpoint, BI_parameters.Tail.motor_orientation] = get_rotational_references(Mesh, assembly_input);
 
-[refpoint, motor_orientation] = get_rotational_references(Mesh, assembly_input);
-tail_ind = 0;
-for i = 1:length(Mesh)
-    if "Tail" == Mesh(i).name  % [Mesh.name] not allowed for code generation, hence this loop
-        tail_ind = i; break;
-    end
-end
 
 % temp = index_mapping;
 % index_mapping = [];
@@ -24,13 +19,19 @@ end
 % index_mapping.global_node2global_u = temp.global_node2global_u;
 % index_mapping.global_u2global_node = temp.global_u2global_node;
 
-index_mapping = struct('local_node2global_node',{struct2cell(index_mapping.local_node2global_node)},...
-    'global_node2local_node',{reshape( struct2cell(index_mapping.global_node2local_node) , [] ,1)},...
-    'global_node2global_u',index_mapping.global_node2global_u,...
-    'global_u2global_node',index_mapping.global_u2global_node);
+% index_mapping = struct('local_node2global_node',{struct2cell(index_mapping.local_node2global_node)},...
+%     'global_node2local_node',{reshape( struct2cell(index_mapping.global_node2local_node) , [] ,1)},...
+%     'global_node2global_u',index_mapping.global_node2global_u,...
+%     'global_u2global_node',index_mapping.global_u2global_node);
 
 % index_mapping.local_node2global_node = struct2cell(index_mapping.local_node2global_node);
 % index_mapping.global_node2local_node = struct2cell(index_mapping.global_node2local_node)';
+index_mapping2 = index_mapping;
+index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
+index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
+
+Network2 = Network;
+Network2.link_members = cell2struct(Network2.link_members,'indices',length(Network2.link_members));
 
 
 coder.extrinsic('tic');
@@ -198,39 +199,12 @@ else
     RHS_BIE0_temp = [];
 end
 
-if assembly_input.performance.debug_mode
-    %     abs_error_1 = NaN(matrix_props.n_col, tot_elems);
-    %     rel_error_1 = NaN(matrix_props.n_col, tot_elems);
-    %     fun_evals_1 = NaN(matrix_props.n_col, tot_elems);
-    %     flag_1 =      NaN(matrix_props.n_col, tot_elems);
-    %     min_value_1 = NaN(matrix_props.n_col, tot_elems);
-    %     max_value_1 = NaN(matrix_props.n_col, tot_elems);
-    %     time_1 =      NaN(matrix_props.n_col, tot_elems);
-    
-else
-    %     abs_error_1 = [];
-    %     rel_error_1 = [];
-    %     fun_evals_1 = [];
-    %     flag_1 =      [];
-    %     min_value_1 = [];
-    %     max_value_1 = [];
-    %     time_1 = [];
-end
+
 if assembly_input.performance.verbose
     disp('initialized A_BIE');
 end
-% A_BIE = zeros(matrix_props.n_rows, matrix_props.n_cols); %includes extra variables and equations for mobility problem case
-% disp('initialized A_BIE'); %assembling full A_BIE will have to be un-mexed for large dino meshes
 
 
-coder.varsize('reference_nodes',[2 3 Inf],[true true true]); %for mex rules
-reference_nodes = [0 1 0; 0 0 1];  %reference triangle normalized node coords
-
-rule = 2;  %1st rule has ridiculously innaccurate (too conservative) error estimates, so never converges to the tolerances
-[rule_constants.G, rule_constants.Weights, rule_constants.PTS] =  SMPRMS( 2, rule );  %always 2 dimensions and constant rule # for all integrals (2nd arg is rule #)
-
-% [~, elem_range] = bounds_from_global_inds(Mesh);  %make it easier to find current submesh inside parfor
-% [i_mesh_elems, local_elems] = global2local(1:tot_elems, Mesh, elem_range, 'elem');    %compute mesh_ind_elem and local_elem, indices to current element's submesh and local element index
 
 % skipping traction integrals currently broken or more accurately, we could still recycle traction integrals easily but if we have free slip nodes, we
 % can't easily deal with the additional U, Omega matrix entries going from resistance to mobility - would have to save int phiTn contributions from
@@ -257,6 +231,21 @@ rule = 2;  %1st rule has ridiculously innaccurate (too conservative) error estim
 %     A_BIE0_1_temp = A_BIE0_1;  A_BIE0_2_temp = A_BIE0_2;  A_BIE0_3_temp = A_BIE0_3;  A_BIE0_4_temp = A_BIE0_4;
 
 
+
+
+% BI_parameters.constants.refpoint = refpoint;
+% BI_parameters.x0_location = "on_mesh";
+% BI_parameters.performance.rigid_body_matrix_rotation = assembly_input.performance.rigid_body_matrix_rotation;
+% BI_parameters.accuracy.mesh.ignore_interaction = assembly_input.accuracy.mesh.ignore_interaction;
+% BI_parameters.accuracy.mesh.eps2 = assembly_input.accuracy.mesh.eps2;
+% BI_parameters.accuracy.network.eps2
+
+x0_location = "on_mesh";
+BI_parameters.constants.refpoint = refpoint;
+
+% coder.varsize('reference_nodes',[2 3 Inf],[true true true]); %for mex rules
+
+
 parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performance.nthreads)  %rows of A_BIE in sets of 3, i.e. x y z components of BIE for each node
     % this loops over collocation points
 %         for global_node_ind = 1:matrix_props.n_collocation    %randperm(matrix_props.n_collocation)
@@ -265,54 +254,56 @@ parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performa
     % keeps meshes in original (presumably somewhat logical) node order.  After matrix solve, can un-randomize order of solution vector so that
     % traction, free slip velocity, etc match the original meshes.
     
-    %                          for global_node_ind = Mesh(mesh_ind_coll).indices.glob.unq_bounds.vert(1) : Mesh(mesh_ind_coll).indices.glob.unq_bounds.vert(2)
-    % col_i
-    % for col_i = 1:matrix_props.n_col
-    % col_i / matrix_props.n_col
+    % need to use below again in separate code that calcs u at network nodes
+%     switch BI_parameters.x0_location
+%         case "on_mesh"
+%             temp = unique( index_mapping.global_node2local_node{global_node_ind}(:,[1 2]), 'rows' ); % submeshes and local node inds for this global node
+%             coll_local = struct('submeshes',temp(:,1),'nodes',temp(:,2));
+%         case "off_boundary"
+%             coll_local = struct('submeshes',NaN(0,1),'nodes',NaN(0,2));
+%     end
     
-    % global2local is a n_global_nodes cell array, each cell is a matrix with rows = submesh, local node ind, element ind, position in element
-    %         index_mapping.global_node2local_node{global_ind}(end+1:end+size(element_inds,1),:) = [repmat([submesh_ind, local_node_ind],size(element_inds,1),1), element_inds, position_inds];
+      temp = unique( index_mapping.global_node2local_node{global_node_ind}(:,[1 2]), 'rows' ); % submeshes and local node inds for this global node
+            x0_parameters = struct('x0',Mesh(temp(1,1)).nodes(temp(1,2),:)',  'submeshes',temp(:,1),      'nodes',temp(:,2));
+    x0_parameters.location = x0_location;
+            
+            
+            
+            x0_parameters.r = Mesh(temp(1,1)).nodes(temp(1,2),:)' - BI_parameters.constants.refpoint; % vector from refpoint to collocation pt
+
+            
+            switch x0_location
+    case "on_mesh"
+        x0_parameters.BC_type = mesh_node_parameters.BC_type(global_node_ind);
+        % index for the unknown velocity at the current collocation point,
+        % between 1 - n where n is number of free slip nodes
+        x0_parameters.global_u_ind = index_mapping.global_node2global_u( global_node_ind );
+        x0_parameters.u = reshape(  squeeze(Mesh(temp(1,1)).u(temp(1,2),:,:)), 3 , []  ); % needed if including DL  3 x flowcases
+  
+    case "off_mesh"
+        x0_parameters.BC_type = NaN;
+        x0_parameters.global_u_ind = NaN;
+          x0_parameters.u = NaN(3,1); % u_coll will never be used
+end
+
+
+% reshape needed in case there's only one flowcase, to make sure
+% arbitrarily look up u_coll for first submesh/local node this global node appears in - u_coll should be the same for all appearances
+
+
     
-    temp = unique( index_mapping.global_node2local_node{global_node_ind}(:,[1 2]), 'rows' ); % submeshes and local node inds for this global node
-    coll_local = struct('submeshes',temp(:,1),'nodes',temp(:,2));
-    %     coll_local.submeshes = temp(:,1);
-    %     coll_local.nodes = temp(:,2);
-    
-    
-    %     for j = 1:length(Mesh)
-    %         coll_i_local = find(global_node_ind == Mesh(j).indices.glob.vert,1);
-    %         if ~isempty(coll_i_local)
-    %             mesh_ind_coll = j; % index of submesh that current collocation pt belongs to (theoretically arbitrarily chosen between multiple submeshes
-    %             % that share the coll pt)
-    %             break
-    %         end
-    %         if isempty(coll_i_local) && j == length(Mesh)
-    %             error('Can''t find global collocation index in any submesh');
-    %         end
-    %     end
-    
-    %     eps2 = assembly_input.accuracy.eps2(mesh_ind_coll); % eps^2 going with reg. Stokeslets for all collocation points on current submesh
-    % innertic = tic;
-    
-    AE = [];   NV = [];     FL = logical([]); %stop parfor complaints about temp variables
-    r_nodes = []; u_element_nodes = []; RHS_coll0 = []; BI_coll0 = [];
-    %             local_vert = local_verts(global_node_ind);  replaced by below, if it doesn't work may have to go back to original
-    %             [~, coll_i_local] = global2local(global_node_ind, Mesh, vert_range, 'vert');
-    
-    
-    u_col = reshape(  squeeze(Mesh(coll_local.submeshes(1)).u(coll_local.nodes(1),:,:)), 3 , []  ); % needed if including DL  3 x flowcases
-    % reshape needed in case there's only one flowcase, to make sure 
-    % arbitrarily look up u_col for first submesh/local node this global node appears in - u_col should be the same for all appearances
-    
-    [full_DL_calcs, inds] = setdiff( coll_local.submeshes , find(assembly_input.performance.eliminate_DL | assembly_input.performance.DL_singularity_removal == 1) ); % submeshes that this collocation pt is on for which we are not eliminating the DL or using trick
+   [BI_coll, RHS_coll, BI_coll0, RHS_coll0] = boundary_integrals_mexed(x0_parameters, global_node_ind, Mesh, mesh_node_parameters, Network2, matrix_props, index_mapping2, BI_parameters ,firstrun);
+
+  
+    [full_DL_submeshes_containing_collocation_pt, inds] = setdiff( x0_parameters.submeshes , find(assembly_input.performance.eliminate_DL | assembly_input.performance.DL_singularity_removal == 1) ); % submeshes that this collocation pt is on for which we are not eliminating the DL or using trick
     % note, eliminate_DL should always be either true or false while DL_singularity_removal can be NaN for bodies that should always have DL eliminated
     % e.g. sheets
-    alphas = NaN(length(full_DL_calcs),1);
-    for n = 1:length(full_DL_calcs)
-        alphas(n) = Mesh( full_DL_calcs(n) ).solid_angle(coll_local.nodes(inds(n)));
+    alphas = NaN(length(full_DL_submeshes_containing_collocation_pt),1);
+    for n = 1:length(full_DL_submeshes_containing_collocation_pt)
+        alphas(n) = Mesh( full_DL_submeshes_containing_collocation_pt(n) ).solid_angle(x0_parameters.nodes(inds(n)));
     end
-    
-    alpha_factor = sum(alphas) + (1 - length(full_DL_calcs))*4*pi; % this is what multiplies the collocation velocity u(x_0) in the BIE; in the typical case
+    % note that we may still be doing full (or singularity removal trick) DL calcs on submeshes NOT containing collocation pt
+    alpha_factor = sum(alphas) + (1 - length(full_DL_submeshes_containing_collocation_pt))*4*pi; % this is what multiplies the collocation velocity u(x_0) in the BIE; in the typical case
     % of u(x_0) being a member of just one body, alpha_factor = alpha.  For e.g. u(x_0) on dino body and transverse, since transverse alpha = 4*pi, we
     % still get alpha of just the body here.
     
@@ -324,470 +315,7 @@ parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performa
     %         alpha = Mesh(coll_local.submesh).solid_angle(coll_local.node);  % solid angle of surface at current collocation pt:  2*pi for smooth, closer to zero for a valley, closer to 4*pi for a ridge or peak
     %     end
     
-    %  [DL_elem, ~, ~, ~] = adsimp( 2, reference_nodes, 54,  assembly_input.accuracy.integration_tol.stresslet.phiTn.maxevals, abstol.stresslet.phiTn,...
-    %      assembly_input.accuracy.integration_tol.stresslet.phiTn.reltol ,rule  ,...
-    %      rule_constants ,element_nodes,shape_parameters,integrand_constants,'reg_stresslet',{'phiTn'},assembly_input.performance.DL_singularity_removal);
-    %
-    
-          x_col = Mesh(coll_local.submeshes(1)).nodes(coll_local.nodes(1),:)';      
-                
-    integrand_constants = struct('eps2',NaN,...
-        'x_col',x_col,...
-        'element_nodes',NaN(6,3),...
-        'shape_parameters',NaN(3,1),...
-        'integral_type',"",...
-        'DL_singularity_removal',false,... % doesn't matter for single layer integral, will overwrite later for double layer integral
-        'refpoint',NaN(3,1),...
-        'field_vel',NaN(6,3)); % either 1 - 6 or 0 for if/where collocation pt is on current element, only matters for DL singularity removal trick with DL integrals
-    % as with u_col, shouldn't matter which instance of this node we look up the coordinates for, should all be the same
-    % eps is allowed to vary between submeshes so it is defined later in the loop over elements
-    % 'coll_node_ind', [],...
-    
-%     integrand_constants = struct;
-%     integrand_constants.x_col = x_col;
-%     integrand_constants.DL_singularity_removal = false;  % doesn't matter for single layer integral, will overwrite later for double layer integral
-    
-    r_col = x_col - refpoint; % vector from refpoint to collocation pt
-    %     BC_type_col = Mesh(coll_local.submesh).vert_BC_type(coll_local.node); % may be needed if including DL
-    BC_type_col = node_parameters.BC_type(global_node_ind);
-    %     global_u_ind = Mesh(coll_local.submesh).indices.glob.unknown_u(coll_local.node); % index for the unknown velocity at the current collocation point,
-    % between 1 - n where n is number of free slip nodes
-    global_u_ind = index_mapping.global_node2global_u( global_node_ind );
-    
-    
-    
-    %%temporary matrix for boundry integrals (BI_coll), row is x, y, z components for current collocation point BIE and columns are coeffs for traction components at each vert, to later insert into submatrices
-    BI_coll = zeros(3,matrix_props.n_cols); % 3 rows for x, y, z components of BIE, columns for x y z components of traction followed by x y z components of unknown u (for free slip coll pts) followed by any unknown kinematic variables (U, Omega, omega)
-    RHS_coll = zeros(3,matrix_props.n_RHS); % just for current collocation pt, for all flowcases
-    
-    if assembly_input.performance.rigid_body_matrix_rotation && firstrun
-        BI_coll0 = zeros(3,matrix_props.n_cols);
-        RHS_coll0 = zeros(3,matrix_props.n_RHS);
-    end
-    
-    % there may be a small penalty to having only 3 rows and many columns (since arrays are stored column-major) but seems unlikely this is significant
-    % since these arrays aren't *that* big?  Can check where time is spent with Profiler before mexing?
-    % also, if we flipped the dimensions for these, we'd have to do a transpose later to insert them into the larger arrays, which would be
-    % expensive, so it's a matter of which penalty is larger...
-    
-    %A_y_temp = zeros(matrix_props.n_col*3,1); A_z_temp = zeros(matrix_props.n_col*3,1);
-    %             A_temp = BI_coll; %what actually gets inserted into A - is the same as BI_coll for no-slip BCs but will be different for free-slip
-    
-    %for debugging + mex rules
-    %     abs_error_temp = [];
-    %     rel_error_temp = [];
-    %     fun_evals_temp = [];
-    %     flag_temp = [];
-    %     min_value_temp = [];
-    %     max_value_temp = [];
-    %             time_temp = [];
-    
-    if assembly_input.performance.debug_mode
-        %                 integral = NaN(3,18,tot_elems);  abserror = integral;
-        %                 numevals = NaN(1,tot_elems);
-        %                 exitflag = numevals;
-        
-        %         abs_error_temp = NaN(1,tot_elems);
-        %         rel_error_temp = NaN(1,tot_elems);
-        %         fun_evals_temp = NaN(1,tot_elems);
-        %         flag_temp =      NaN(1,tot_elems);
-        %         min_value_temp = NaN(1,tot_elems);
-        %         max_value_temp = NaN(1,tot_elems);
-        %                 time_temp = NaN(1,tot_elems);
-        
-    end
-    
-    %             elem_t1 = [];  %appease parfor rules
-    
-    
-    
-    %         RHS_temp0 = zeros(3,matrix_props.n_RHS);
-    for mesh_ind_elem = 1:length(Mesh)
-        % ignore interaction if the element submesh is not a member of any submeshes the coll pt is on
-        if assembly_input.accuracy.ignore_interaction && ~ismember( mesh_ind_elem, coll_local.submeshes )
-            
-            %collocation point and element are in different submeshes - skip integrals
-            continue
-        end
-        
-        % if coll pt is a member of the element-containing submesh, then can do tensor rotations since the coll pt and element must be rigidly connected, even if
-        % another submesh the coll pt belongs to is deforming
-        if assembly_input.performance.rigid_body_matrix_rotation && ~firstrun && Mesh(mesh_ind_elem).is_mesh_rigid && ismember( mesh_ind_elem , coll_local.submeshes )
-            % we can simply rotate the tensor contributions coming from the nodes on this element instead of integrating again
-            continue
-        end
-        
-        integrand_constants.eps2 = assembly_input.accuracy.eps2(mesh_ind_elem); % each submesh has an eps corresponding to all its elements
-        % since we're assuming eps is piecewise constant across elements, there can be discontinuities between submeshes, but this should be OK?
-        
-        for local_elem = 1:Mesh(mesh_ind_elem).n_elements
-            %     for elem_i = 1:tot_elems  %elem_i is a global index
-            %         elem_i / Mesh.n_elem
-            %                 if assembly_input.performance.debug_mode
-            %                     elem_t1 = clock;
-            %                 end
-            
-            %                 [mesh_ind_elem, local_elem] = global2local(elem_i, Mesh, elem_range, 'elem');    %compute mesh_ind_elem and local_elem, indices to current element's submesh and local element index
-            %         mesh_ind_elem = i_mesh_elems(elem_i);   local_elem = local_elems(elem_i);
-            
-            %          ind2 = matrix_props.global2local.elem.permuted_inds(elem_i);  % probably a dummy operation since elem_i = ind2 unless you decide to randomly permute elements as well as verts
-            %     mesh_ind_elem = matrix_props.global2local.elem.submesh(ind2); %submesh index
-            %     local_elem = matrix_props.global2local.elem.local(ind2);  %element index
-            
-            
-            BI_elem = zeros(3,matrix_props.n_cols); % stores cumulative matrix contributions for integrals over a single element
-            RHS_elem = zeros(3,matrix_props.n_RHS); % stores cumulative RHS contributions for integrals over a single element
-            
-            
-            %want mesh_ind_elem below since we are generally interested in current
-            %element; node only matters as far as it's distance away when computing reg stokeslet
-            %function
-            element_node_inds = Mesh(mesh_ind_elem).elements(local_elem,:); % local inds for nodes of current element  1 x 6
-            element_nodes = Mesh(mesh_ind_elem).nodes(element_node_inds,:); % coords of nodes of current element   6 x 3
-            element_global_node_inds = index_mapping.local_node2global_node{mesh_ind_elem}(element_node_inds); % global inds for nodes of current element  6 x 1
-            
-            %         element_global_node_inds = Mesh(mesh_ind_elem).indices.glob.vert(element_node_inds); % global inds for verts of current element
-            %         submesh_members = {Mesh(mesh_ind_elem).indices.submesh_members{element_node_inds}}; % submeshes each vert of this element belong to
-            
-            
-            BC_types = node_parameters.BC_type( element_global_node_inds ); % BC for each element node:  1 for no slip, 2 for free slip
-            if ~assembly_input.performance.eliminate_DL(mesh_ind_elem) % include DL integrals over current submesh elements?
-                u_element_nodes = ( Mesh(mesh_ind_elem).u(element_node_inds,:,:) ); % known u contributions (body frame velocities for mobility problem, fixed frame velocities
-                % resistance problem) at each element node.   6 x 3 x F flowcases
-            end
-            
-            if strcmp( assembly_input.problemtype , 'mobility' )
-                r_nodes = element_nodes' - repmat(refpoint,1,6); % 3 x 6 vectors from refpoint to each vert of current element
-            end
-            
-            unknown_u_global_inds = index_mapping.global_node2global_u(element_global_node_inds); % indices into matrix in case there are unknown fluid u due
-            % to free slip BC at some nodes of current element
-            
-            integrand_constants.element_nodes = element_nodes;
-            integrand_constants.shape_parameters = Mesh(mesh_ind_elem).shape_parameters(local_elem,:)';  %[alpha beta gamma]'  3 x 1
-             
-            integrand_constants.coll_node_ind = find( global_node_ind == element_global_node_inds);  % needed to appease Coder, which requires this be scalar
-%                 if ~isempty(temp)
-%                     temp = temp(1);
-%                 end
-%                 integrand_constants.coll_node_ind = temp;  % *really* local index (1-6) of node of current element matching current collocation pt, otherwise empty
-               
-            %         col_inds = matrix_props.Col_inds(elem_i,:); %Col_inds was defined based on global indices so use elem_i not local_elem
-            % these are the column inds of A_BIE that go with the traction (x y z components) at each of 6 nodes of the current element
-            
-            
-            %scale abs integration tolerance by element area, since big elements
-            %should be allowed more total error than small elements
-            abstol_stokeslet =  assembly_input.accuracy.integration_tol.stokeslet.abstol * Mesh(mesh_ind_elem).area(local_elem);
-            %don't scale reltol, since reltol should already account for area
-            %since the integral itself should scale with area
-            
-            %                 abstol.stresslet.Tn =  assembly_input.accuracy.integration_tol.stresslet.Tn.abstol * Mesh(mesh_ind_elem).area(local_elem);
-            %                 abstol.stresslet.rTn =  assembly_input.accuracy.integration_tol.stresslet.rTn.abstol * Mesh(mesh_ind_elem).area(local_elem);
-            
-            %the important part:  adaptively compute boundary integrals of reg stokeslet function over
-            %current element, with respect to current collocation point
-            integrand_constants.integral_type = "reg_stokeslet";
-            
-            if assembly_input.performance.debug_mode
-                % shatlab hangs at almost no CPU usage with the tic/toc
-                % inside adsimp so timing inside the parfor doesn't work even though it
-                % compiles without errors
-                %[SL_elem, AE, NV, FL, Time] = adsimp( 2, reference_nodes, 54,  assembly_input.accuracy.integration_tol.traction.maxevals,abstol, assembly_input.accuracy.integration_tol.traction.reltol ,rule  , rule_constants ,element_nodes,shape_parameters,integrand_constants,'reg_stokeslet', true);
-                [SL_elem, AE, NV, FL] = adsimp( 2, reference_nodes, 54,  assembly_input.accuracy.integration_tol.stokeslet.maxevals,abstol_stokeslet, assembly_input.accuracy.integration_tol.stokeslet.reltol ,rule  , rule_constants ,integrand_constants);
-                %                     SL_elem = ones(54,1);  AE = ones(54,1);  NV = 1;  FL = 1;
-            else %don't bother storing extra outputs
-                %                     [SL_elem, ~, ~, ~, ~] = adsimp( 2, reference_nodes, 54,  assembly_input.accuracy.integration_tol.traction.maxevals,abstol, assembly_input.accuracy.integration_tol.traction.reltol ,rule  , rule_constants ,element_nodes,shape_parameters,integrand_constants,'reg_stokeslet', false);
-                
-                [SL_elem, ~, ~, ~] = adsimp( 2, reference_nodes, 54,  assembly_input.accuracy.integration_tol.stokeslet.maxevals,abstol_stokeslet, assembly_input.accuracy.integration_tol.stokeslet.reltol ,rule  , rule_constants ,integrand_constants);
-                %                 SL_elem = ones(54,1);  AE = ones(54,1);  NV = 1;  FL = 1;
-                SL_elem = SL_elem * 1/2 / assembly_input.constants.mu;  % assumes that solid angle (2*pi for a smooth region) multiplies u_c on left side of BIE
-                
-            end
-            %               out =  hS*[S(1,1)*phi; S(1,2)*phi; S(1,3)*phi; ...
-            %             S(2,1)*phi; S(2,2)*phi; S(2,3)*phi; ...
-            %             S(3,1)*phi; S(3,2)*phi; S(3,3)*phi];
-            % integrals of phiS
-            submat = reshape(SL_elem,18,3)'; % 6 nodes, 3 x y z components of traction per node = 3 rows for x y z components of BIE,
-            % 18 columns for x, y, z traction components and 6 phi
-            
-            %entries in matrix are total boundary integrals (BI) so can do a cumulative sum
-            inds = ( repmat( 3 * (element_global_node_inds - 1),1,3) + repmat([1 2 3],6,1) ); % indices of matrix columns corresponding to x,y,z traction components at global nodes of
-            % current element   6 x 3 each column are the matrix column inds of the 6 nodes, and we have 3 columns for x, y, z components of traction
-            
-            
-            BI_elem(:,inds(:)) = BI_elem(:,inds(:)) + submat;
-            %                 BI_elem(2,col_inds) = BI_elem(2,col_inds) + submat(:,2)';
-            %                 BI_elem(3,col_inds) = BI_elem(3,col_inds) + submat(:,3)';
-            
-            %             if assembly_input.performance.rigid_body_matrix_rotation && firstrun && Mesh(mesh_ind_elem).rigid && mesh_ind_elem == mesh_ind_coll
-            %                 BI0(:,col_inds) = BI0(:,col_inds) + submat';  % this version of BI_coll will only have constributions from integrals for elements and coll
-            %                 % pts on the same rigid body
-            %             end
-            
-            
-            if ~assembly_input.performance.eliminate_DL(mesh_ind_elem)  % compute DL integrals over this element
-                integrand_constants.integral_type = "reg_stresslet";
-                integrand_constants.DL_singularity_removal = assembly_input.performance.DL_singularity_removal(mesh_ind_elem);
-                abstol_stresslet =  assembly_input.accuracy.integration_tol.stresslet.phiTn.abstol * Mesh(mesh_ind_elem).area(local_elem);
-                % integrating phiTn regardless of no slip or free slip, but need to handle all flowcases for no slip
-                [DL_elem, ~, ~, ~] = adsimp( 2, reference_nodes, 54,  assembly_input.accuracy.integration_tol.stresslet.phiTn.maxevals, abstol_stresslet, assembly_input.accuracy.integration_tol.stresslet.phiTn.reltol ,rule  , rule_constants , integrand_constants);
-                DL_elem = DL_elem * 1/2;  %  assumes that solid angle (2*pi for a smooth region) multiplies u_c on left side of BIE
-                
-                switch assembly_input.problemtype
-                    case "resistance"
-                        
-                        %                                 assembly_input.BC_type(mesh_ind_elem) % only matters for inserting values into A_BIE or RHS, either way we're integrating phiTn
-                        % mobility:  for elements that are shared between no slip, free slip vertices, can simply compute all variations of the integrand (e.g.
-                        % Tn, rTn, phiTn) and just only use the ones needed for each vertex of the element
-                        
-                        
-                        
-                        % each Mesh(i).u is Nx3xM where M is length(flowcases), N is #verts
-                        %                             u_cols = zeros(matrix_props.n_col, matrix_props.n_unknown_u*3 ,3); % extra columns for coeffs corresponding to unknown u components in DL integrals
-                        %                             u_rows = zeros(matrix_props.n_unknown_u*3 , matrix_props.n_cols);
-                        
-                        
-                        
-                        for vi = 1:6
-                            % phiTn for phi of current vert
-                            phiTn = [ DL_elem(vi)  DL_elem(6+vi) DL_elem(12+vi) ;...
-                                DL_elem(18+vi)  DL_elem(24+vi)  DL_elem(30+vi) ;...
-                                DL_elem(36+vi) DL_elem(42+vi)  DL_elem(48+vi) ;  ];
-                            
-                            switch BC_types(vi)
-                                
-                                case 1 % no slip
-                                    
-                                    % flowcases, e.g. forced x y z translation and x y z rotation to calculate diffusivities
-                                    if assembly_input.performance.DL_singularity_removal(mesh_ind_elem) && BC_type_col == 1
-                                        % no slip, u_col is prescribed and known
-                                        vel_mod = reshape( squeeze(u_element_nodes(vi,:,:)),3,[]) - u_col;  %u_element_nodes is 6 x 3 x flowcases, u_col is 3 x flowcases
-                                        % free slip, u_col is unknown
-                                    else % either not doing trick, or doing trick but u_col is unknown
-                                        vel_mod = reshape( squeeze(u_element_nodes(vi,:,:)),3,[]);
-                                    end
-                                    % velmod is 3 x flowcases
-                                    % in any case, add integral corresponding to known u_v to RHS
-                                    RHS_elem = RHS_elem - phiTn * vel_mod; % RHS_elem is 3 x flowcases
-                                    % minus since we're moving this term from LHS to RHS
-                                    %                                     if assembly_input.performance.rigid_body_matrix_rotation && firstrun && Mesh(mesh_ind_elem).rigid && mesh_ind_elem == mesh_ind_coll
-                                    %                                         RHS_temp0 = RHS_temp0 - phiTn * vel_mod;   % this version of BI_coll will only have constributions from integrals for elements and coll
-                                    %                                         % pts on the same rigid body
-                                    %                                     end
-                                    
-                                case 2 % free slip
-                                    % in case of no trick, these coeffs go with u for this vert (across columns for each u component, down rows for each BIE
-                                    % component)
-                                    inds = matrix_props.n_collocation*3 + 3 * (unknown_u_global_inds(vi) - 1) + [1 2 3]; % corresponding to inds for 3 components of unknown u
-                                    % matrix columns are organized with unknown u following unknown traction
-                                    BI_elem(:,inds ) = BI_elem(:,inds ) + phiTn;
-                                    
-                                    % in case of trick, these coeffs still go with u for this vert, AND -coeffs go with u_col:
-                                    if assembly_input.performance.DL_singularity_removal(mesh_ind_elem) && BC_type_col == 1
-                                        % if u_col is no-slip, then add sum(coeffs .* u_col , 2) to RHS.
-                                        % flowcases, e.g. forced x y z translation and x y z rotation to calculate diffusivities
-                                        RHS_elem = RHS_elem + phiTn * u_col; % minus sign from moving from LHS to RHS negated since we want to add integral of -u_col
-                                        
-                                    end
-                                    
-                            end % no slip vs free slip
-                            
-                            if assembly_input.performance.DL_singularity_removal(mesh_ind_elem) && BC_type_col == 2
-                                % if u_col is free-slip, also add integral corresponding to unknown u_c to coeffs in matrix
-                                inds = matrix_props.n_collocation*3 + 3 * (global_u_ind - 1) + [1 2 3]; % corresponding to inds for 3 components of unknown u
-                                % matrix columns are organized with unknown u following unknown traction
-                                % minus sign since we were integrating (u_v - u_c)*Tn
-                                BI_elem(:,inds ) = BI_elem(:,inds) - phiTn;
-                            end
-                            
-                        end % element_nodes of current element
-                        
-                        
-                        
-                    case "mobility"
-                        
-                        
-                        %mobility, noslip   same matrix size    add DL terms into coeffs for U, Omega, and export DL terms for u_r to RHS
-                        % integrate Tn for U coeffs (9 values for 3 U components, 3 BIE components), rTn for Omega coeffs (9 values), phiTn to overall integrate uTn
-                        % where u = known, interped u_r on flagella (6 x 9 = 54 values, combined with known u_r on element verts to yield 3 values for 3 components of BIE, exported to RHS)
-                        % in trick, Tn is set to zeros since int(U - U_c)Tn will be zero everywhere
-                        % in trick, we overall int( Omega x (r - r_c) Tn ) so that integrand goes to zero at collocation vertex
-                        % in trick, we manually zero out phiTn when an element vertex is the same as the current collocation pt
-                        %                                 maxevals_temp = [ repmat(assembly_input.accuracy.integration_tol.stresslet.Tn.maxevals,9,1); repmat(assembly_input.accuracy.integration_tol.stresslet.rTn.maxevals,9,1); repmat(assembly_input.accuracy.integration_tol.stresslet.phiTn.maxevals,54,1); ];
-                        %                                 abstol_temp = [ repmat(abstol.stresslet.Tn,9,1); repmat(abstol.stresslet.rTn,9,1);  repmat(abstol.stresslet.phiTn,54,1); ];
-                        %                                 reltol_temp = [ repmat(assembly_input.accuracy.integration_tol.stresslet.Tn.reltol,9,1); repmat(assembly_input.accuracy.integration_tol.stresslet.rTn.reltol,9,1); repmat(assembly_input.accuracy.integration_tol.stresslet.phiTn.reltol,54,1); ];
-                        
-                        %                                 [DL_elem, ~, ~, ~] = adsimp( 2, reference_nodes, 54,  maxevals_temp, abstol_temp,reltol_temp ,rule  , rule_constants ,element_nodes,shape_parameters,integrand_constants,'reg_stresslet',{'Tn','rTn','phiTn'},assembly_input.performance.DL_singularity_removal);
-                        %                                 Tn = reshape(DL_elem(1:9),3,3);  rTn = reshape(DL_elem(10:18),3,3);  phiTn = DL_elem(19:72);
-                        
-                        for vi = 1:6
-                            % phiTn for phi of current vert
-                            phiTn = [ DL_elem(vi)  DL_elem(6+vi) DL_elem(12+vi) ;...
-                                DL_elem(18+vi)  DL_elem(24+vi)  DL_elem(30+vi) ;...
-                                DL_elem(36+vi) DL_elem(42+vi)  DL_elem(48+vi) ;  ];
-                            
-                            switch BC_types(vi)
-                                
-                                case 1 % no slip
-                                    
-                                    % keeping the ability to handle multiple "flowcases" here for giggles - i.e. if one wanted to try
-                                    % relative surface velocities, perhaps for a squirmer? (geometry would need to be the same over time
-                                    % for each case, which is kind of limiting....)
-                                    if assembly_input.performance.DL_singularity_removal(mesh_ind_elem) && BC_type_col == 1
-                                        % no slip, u_col is prescribed and known
-                                        vel_mod = reshape( squeeze(u_element_nodes(vi,:,:)),3,[]) - u_col;  %u_element_nodes is 6 x 3 x flowcases, u_col is 3 x flowcases
-                                        r_mod = r_nodes(:,vi) - r_col;
-                                        U_factor = 0; % int(U_v - U_c)Tn is always zero, even when current node is not same as current coll pt, since U is
-                                        % a constant everywhere
-                                        % free slip, u_col is unknown
-                                    else % either not doing trick, or doing trick but u_col is unknown
-                                        vel_mod = reshape( squeeze(u_element_nodes(vi,:,:)),3,[]);
-                                        r_mod = r_nodes(:,vi);
-                                        U_factor = 1;
-                                    end
-                                    % vel_mod is 3 x flowcases
-                                    
-                                    % rphiTn are the coeffs going with (Omega x r)phiTn   3 x 3
-                                    rphiTn = [r_mod(2)*phiTn(:,3) - r_mod(3)*phiTn(:,2) , r_mod(3)*phiTn(:,1) - r_mod(1)*phiTn(:,3) , r_mod(1)*phiTn(:,2) - r_mod(2)*phiTn(:,1) ];
-                                    % may have to repmat each r into 3 rows for Coder
-                                    
-                                    % these entries hold whether or not we do the trick since the trick is taken care of when we compute Tn, rTn and with
-                                    % U_factor and r_mod
-                                    inds = matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + (1:6);
-                                    BI_elem(:,inds ) = BI_elem(:,inds ) + [repmat(U_factor,3,3).*phiTn  rphiTn]; % coeffs for U and Omega
-                                    % need U_factor here to zero out the U phiTn term with trick even when current node is not same as current coll pt, since U phiTn
-                                    % term always cancels out when doing trick
-                                    
-                                    if assembly_input.rotating_flagellum && strcmp(assembly_input.Tail.motorBC,'torque') && mesh_ind_elem == tail_ind
-                                        % (only accounting for one tail for now, need to generalize for multiflagellated)
-                                        % if element node is on bacterial tail and no slip, with unknown omega
-                                        ind = matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + 7; % coeff for unknown omega for tail rotation relative to body
-                                        BI_elem(:,ind ) = BI_elem(:,ind ) - rphiTn * motor_orientation; % see "double layer" work
-                                        % negative sign due to how we define the contribution of relative tail rotation (see Schuech et al PNAS SI)
-                                    end
-                                    
-                                    
-                                    % in any case, add integral corresponding to known u_v to RHS
-                                    RHS_elem = RHS_elem - phiTn * vel_mod; % RHS_elem is 3 x flowcases
-                                    % minus since we're moving this term from LHS to RHS
-                                    
-                                case 2 % free slip
-                                    % in case of no trick, these coeffs go with u for this vert (across columns for each u component, down rows for each BIE
-                                    % component)
-                                    inds = matrix_props.n_collocation*3 + 3 * (unknown_u_global_inds(vi) - 1) + [1 2 3]; % corresponding to inds for 3 components of unknown u
-                                    % matrix columns are organized with unknown u following unknown traction
-                                    BI_elem(:,inds ) = BI_elem(:,inds ) + phiTn;
-                                    
-                                    % in case of trick, these coeffs still go with u for this vert as included directly above, AND -coeffs also go with u_col:
-                                    if assembly_input.performance.DL_singularity_removal(mesh_ind_elem) && BC_type_col == 1
-                                        % need to include -int(U phiTn) - int(Omega x r phiTn) for collocation pt
-                                        % rphiTn are the coeffs going with (Omega x r)phiTn   3 x 3
-                                        rphiTn = [r_col(2)*phiTn(:,3) - r_col(3)*phiTn(:,2) , r_col(3)*phiTn(:,1) - r_col(1)*phiTn(:,3) , r_col(1)*phiTn(:,2) - r_col(2)*phiTn(:,1) ];
-                                        % may have to repmat each r into 3 rows for Coder
-                                        
-                                        inds = matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + (1:6);
-                                        BI_elem(:,inds ) = BI_elem(:,inds ) - [phiTn  rphiTn]; % coeffs for U and Omega
-                                        
-                                        if assembly_input.rotating_flagellum && assembly_input.Tail.motorBC == "torque" && ismember( tail_ind , coll_local.submeshes )
-                                            ind = matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + 7; % coeff for unknown omega for tail rotation relative to body
-                                            BI_elem(:,ind ) = BI_elem(:,ind ) + rphiTn * motor_orientation; % see "double layer" work
-                                            % plus:  normally would be minus due to how tail rotation is accounted for, see Schuech PNAS 2019, but we are
-                                            % subtracting u_col via the trick so it becomes plus
-                                        end
-                                        
-                                        
-                                        % also add int(u_r phiTn) at collocation pt to RHS.
-                                        % flowcases, e.g. forced x y z translation and x y z rotation to calculate diffusivities
-                                        RHS_elem = RHS_elem + phiTn * u_col; % minus sign from moving from LHS to RHS negated since we want to add integral of -u_col
-                                        
-                                    end
-                                    
-                            end % no slip vs free slip
-                            
-                            if assembly_input.performance.DL_singularity_removal(mesh_ind_elem) && BC_type_col == 2
-                                % if u_col is free-slip, also add integral corresponding to unknown u_c to coeffs in matrix
-                                inds = matrix_props.n_collocation*3 + 3 * (global_u_ind - 1) + [1 2 3]; % corresponding to inds for 3 components of unknown u
-                                % matrix columns are organized with unknown u following unknown traction
-                                % minus sign since we were integrating (u_v - u_c)*Tn
-                                BI_elem(:,inds ) = BI_elem(:,inds) - phiTn;
-                            end
-                            
-                            
-                        end % element_nodes of current element
-                        
-                        
-                        
-                end % resistance problem vs mobility problem
-                
-                
-                % resistance problem, noslip     same matrix size   DL should be zero but can incl as RHS only, need to calc here and export out for every flowcase
-                % integrate phiTn where overall aim is to integate uTn (no trick) or (u - u_c)Tn (trick) where u is known, interped u at any point, for all flowcases
-                % in trick, we manually zero out phiTn when an element vertex is the same as the current collocation pt
-                % 3 values for 3 components of BIE (for each flowcase)
-                
-                
-                % resistance problem, freeslip  bigger matrix    DL nonzero, need to add all DL terms involving u as unknowns.  RHS = zero for BIEs and RHS = imposed (U+Omegaxr).n for additional equations
-                % integrate phiTn for coeffs that multiply 3 components of 6 u_v velocities at verts, or in case of trick, (u_v - u_c) at each vert
-                % 54 values from 6 phi * 9 Tn entries
-                % leave u_c as an unknown in BIE, then add additional equations for u_c.n = known values
-                
-                
-                %mobility problem, noslip   same matrix size    add DL terms into coeffs for U, Omega, and export DL terms for u_r to RHS
-                % integrate Tn for U coeffs (9 values for 3 U components, 3 BIE components), rTn for Omega coeffs (9 values), phiTn to overall integrate uTn
-                % where u = known, interped u_r on flagella (6 x 9 = 54 values, combined with known u_r on element verts to yield 3 values for 3 components of BIE, exported to RHS)
-                % in trick, Tn is set to zeros since int(U - U_c)Tn will be zero everywhere
-                % in trick, we overall int( Omega x (r - r_c) Tn ) so that integrand goes to zero at collocation vertex
-                % in trick, we manually zero out phiTn when an element vertex is the same as the current collocation pt
-                
-                
-                %mobility problem, freeslip  bigger matrix
-                % integrate phiTn for coeffs that multiply 3 components of 6 u_v velocities at verts, or in case of trick, (u_v - u_c) at each vert
-                % 54 values from 6 phi * 9 Tn entries
-                % same integration as resistance problem, freeslip since we don't know any u_v velocities here either
-                % difference from resistance problem comes in during matrix assembly, where additional constraint eqs on u_c.n must be expanded to
-                % U.n + (Omega x r).n + u_r.n and we have the additional eqs for sum(forces), sum(torques) = 0 to solve for U, Omega
-                
-            end % include DL
-            
-            
-            
-            
-            
-            if assembly_input.performance.debug_mode
-                
-                %             abs_error_temp(elem_i) = max(abs(AE));  %the largest abs error over all 54 component integrals
-                %             rel_error_temp(elem_i) = max(    abs(AE ./ SL_elem)  );  %the largest rel error over all 54 component integrals
-                %             fun_evals_temp(elem_i) = NV;
-                %             flag_temp(elem_i) = FL;
-                %
-                %             min_value_temp(elem_i) = min(abs(SL_elem) );  %smallest (absolute) component integral
-                %             max_value_temp(elem_i) = max(abs(SL_elem) );  %largest (absolute) component integral
-                
-                %                     time_temp(elem_i) = Time;
-                
-            end
-            
-            %           BI_elems = BI_elems + BI_elem;
-            %              RHS_elems = RHS_elems + RHS_elem;
-            
-            BI_coll = BI_coll + BI_elem;
-            RHS_coll = RHS_coll + RHS_elem;
-            
-            if assembly_input.performance.rigid_body_matrix_rotation && firstrun && Mesh(mesh_ind_elem).is_mesh_rigid && ismember(mesh_ind_elem , coll_local.submeshes)
-                
-                BI_coll0 = BI_coll0 + BI_elem;
-                RHS_coll0 = RHS_coll0 + RHS_elem;   % this version of BI_coll will only have constributions from integrals for elements and coll
-                % pts on the same rigid body
-            end
-            
-            
-            
-        end  % elements
-        
-    end % submeshes
-    
-    
+ 
     % currently redoing below contributions even for rigid body coll pts + elements since I'm not sure if/how the rotations would work for these.
     % the cost of redoing them is probably very small though
     
@@ -797,10 +325,10 @@ parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performa
     % (it is (alpha - 4*pi)u_c and that alpha is 4 pi since the coll point is not in/on that mesh - note, not same alpha_factor as the LHS of the BIE) so we
     % don't need to do anything about it here
     
-    switch BC_type_col
+    switch x0_parameters.BC_type
         case 1 % no slip
             % RHS_elem is 3 x flowcases
-            RHS_coll = RHS_coll + alpha_factor*u_col; % contribution of known u_r    u_col is 3 x flowcases
+            RHS_coll = RHS_coll + alpha_factor*x0_parameters.u; % contribution of known u_r    u_col is 3 x flowcases
             
             switch assembly_input.problemtype
                 
@@ -809,22 +337,24 @@ parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performa
                 case "mobility" % u_c = U + (Omega x r) + u_r
                     inds = matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + (1:6);
                     % subtract to move unknowns into matrix side of BIE
-                    BI_coll(1,inds ) = BI_coll(1,inds ) - alpha_factor*[1 0 0   0          r_col(3)   -r_col(2)]; % coeffs from U and (Omega x r)
-                    BI_coll(2,inds ) = BI_coll(2,inds ) - alpha_factor*[0 1 0  -r_col(3)   0           r_col(1)]; % coeffs from U and (Omega x r)
-                    BI_coll(3,inds ) = BI_coll(3,inds ) - alpha_factor*[0 0 1   r_col(2)  -r_col(1)    0]; % coeffs from U and (Omega x r)
+                    BI_coll(1,inds ) = BI_coll(1,inds ) - alpha_factor*[1 0 0   0          x0_parameters.r(3)   -x0_parameters.r(2)]; % coeffs from U and (Omega x r)
+                    BI_coll(2,inds ) = BI_coll(2,inds ) - alpha_factor*[0 1 0  -x0_parameters.r(3)   0           x0_parameters.r(1)]; % coeffs from U and (Omega x r)
+                    BI_coll(3,inds ) = BI_coll(3,inds ) - alpha_factor*[0 0 1   x0_parameters.r(2)  -x0_parameters.r(1)    0]; % coeffs from U and (Omega x r)
                     
-                    if assembly_input.rotating_flagellum && assembly_input.Tail.motorBC == "torque" && ismember( tail_ind , coll_local.submeshes)
+                    if assembly_input.rotating_flagellum && assembly_input.Tail.motorBC == "torque" && ismember( assembly_input.Tail.submesh_index , x0_parameters.submeshes)
                         % (tail hardcoded as submesh #2 now, need to generalize for more other bacteria models)
                         % if col pt is on bacterial tail and no slip, with unknown omega, and doing trick
                         
                         ind = matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3 + 7; % coeff for unknown omega for tail rotation relative to body
                         
-                        BI_coll(:,ind) = BI_coll(:,ind) + alpha_factor*crossprod(motor_orientation , r_col);
+                        BI_coll(:,ind) = BI_coll(:,ind) - alpha_factor*crossprod(BI_parameters.Tail.motor_orientation , x0_parameters.r);
                         %+ alpha_factor*[motor_orientation(2)*r_col(3) - motor_orientation(3)*r_col(2); ...
                         %                                 motor_orientation(3)*r_col(1) - motor_orientation(1)*r_col(3); ...
                         %                                 motor_orientation(1)*r_col(2) - motor_orientation(2)*r_col(1)];
-                        % positive sign since the usual negative for this term is negated due to moving it from the RHS into the matrix
-                        
+                        % WRONG I THINK:  positive sign since the usual negative for this term is negated due to moving it from the RHS into the matrix
+                        % I think there's a mistake in the PNAS SI, this term should normally have a postive sign, but it gets negated when moving it from
+                        % u-side of BIE into the matrix side.  Having a negative here matches old code and appears to work as far as particle tracking
+                        % tests.
                     end
                     
             end
@@ -851,21 +381,7 @@ parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performa
     %         RHS_BIE(global_node_ind + z_start,:) = RHS_coll(3,:);
     
     RHS_BIE(global_node_ind,:,:) = RHS_coll;
-    %             switch assembly_input.BC_type(mesh_ind_coll)
-    %                 case 1
-    %                     A_temp = BI_coll; % A_a_temp = A_x_temp;  A_b_temp = A_y_temp;  A_c_temp = A_z_temp;
-    %                 case 2
-    %
-    %                     normal = Mesh(mesh_ind_coll).normals(local_vert,:); % unit normal vector at current vert
-    %                     tangents = squeeze(Mesh(mesh_ind_coll).tangents(local_vert,:,:)); % 2 orthogonal unit tangent vectors s1, s2 at current vert
-    %
-    %                     A_temp(1,:) = BI_coll(1,:) * normal(1) + BI_coll(2,:) * normal(2) + BI_coll(3,:) * normal(3);  % u.n at current vert
-    %                     % already initialized as zeros  A_b_temp = zeros(size(A_a_temp);  A_c_temp = zeros(size(A_a_temp);
-    %                     traction_inds = find( vertind_cols == col_i ); %the 3 consecutive column inds corresponding to col_i vert
-    %                     A_temp(2,traction_inds) = tangents(:,1); % 2nd constraint for this vertex is that f.s1 = 0
-    %                     A_temp(3,traction_inds) = tangents(:,2);  %3rd constraint for this vertex is that f.s2 = 0
-    %             end
-    
+
     
     %%
     switch n_splits
@@ -923,39 +439,6 @@ parfor (global_node_ind = 1:matrix_props.n_collocation , assembly_input.performa
             end
     end
     
-    %%
-    
-    if assembly_input.performance.debug_mode
-%         numels = matrix_props.n_col * matrix_props.n_col*3;
-        %                 numels =  matrix_props.n_col * tot_elems;
-        
-%         if numels < assembly_input.performance.numels_max
-            
-            %             abs_error_1(col_i, :) = abs_error_temp(1,:);  %the largest abs error over all 54 component integrals
-            %             rel_error_1(col_i, :) = rel_error_temp(1,:);  %the largest rel error over all 54 component integrals
-            %             fun_evals_1(col_i, :) = fun_evals_temp(1,:);
-            %             flag_1(col_i, :) = flag_temp(1,:);
-            %
-            %             min_value_1(col_i, :) = min_value_temp(1,:);  %smallest (absolute) component integral
-            %             max_value_1(col_i, :) = max_value_temp(1,:);  %largest (absolute) component integral
-            
-            %                    time_1(col_i,:) = time_temp(1,:);  %time spent for each element iter
-            
-            % outputting all these bastards will be truly painful,
-            % so leaving unfinished for now unless it really
-            % becomes necessary
-%         elseif ceil(numels / 2)  < assembly_input.performance.numels_max
-            
-%         else
-            
-%         end
-        
-    end % debug mode
-    
-    % can display timing debug info, but only works for non-mexed version
-    %         task = getCurrentTask;
-    %         ID = task.ID;
-    %         disp(['Worker = ',num2str(ID),'      ','col_i = ',num2str(col_i),'   took ',num2str(toc(innertic))]);
     
     
 end   %parfor over collocation points %%%%%%%%%%%%%%%%%%%%%%%%%    parfor      %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1077,36 +560,8 @@ end
 
 
 
-%     if assembly_input.performance.verbose
-%         disp(['Matrix assembly for ',Mesh(mesh_ind_coll).name,' collocation pts took ',num2str(toc(mesh_loop_tic))]);
-%     end
-
-% end %for over submeshes
-
 if assembly_input.performance.verbose
     disp(['Entire matrix assembly loop took ',num2str(toc)]);
 end
-tic;
-
-if assembly_input.performance.debug_mode
-    %             Relerror = abs(Abserror ./ Integral);
-    %             relcontrol = sum(Relerror(:) <= assembly_input.accuracy.integration_tol.traction.reltol & Abserror(:) >= assembly_input.accuracy.integration_tol.traction.abstol) ./ numel(Abserror);
-    %             abscontrol = sum(Relerror(:) >= assembly_input.accuracy.integration_tol.traction.reltol & Abserror(:) <= assembly_input.accuracy.integration_tol.traction.abstol) ./ numel(Abserror);
-    %             bothcontrol = sum(Relerror(:) <= assembly_input.accuracy.integration_tol.traction.reltol & Abserror(:) <= assembly_input.accuracy.integration_tol.traction.abstol) ./ numel(Abserror);
-    
-    
-    
-    %     debug_info.abs_error = abs_error_1;  abs_error_1 = [];
-    %     debug_info.rel_error = rel_error_1;  rel_error_1 = [];
-    %     debug_info.fun_evals = fun_evals_1;  fun_evals_1 = [];
-    %     debug_info.flag      = flag_1;       flag_1 = [];
-    %     debug_info.min_value = min_value_1;  min_value_1 = [];
-    %     debug_info.max_value = max_value_1;  max_value_1 = [];
-    %         debug_info.time = time_1;            time_1 = [];
-    
-end
-
-% disp(['Debug info and Ax, Ay, Az building took ',num2str(toc)]);
-
 
 

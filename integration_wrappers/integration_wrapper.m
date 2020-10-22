@@ -1,4 +1,4 @@
-function [VL_out] = integration_wrapper(Mesh, integral_type, abstol_unscaled, reltol, maxevals, nthreads, varargin)
+function [VL_out] = integration_wrapper(Mesh, integral_type, abstol_unscaled, reltol, maxevals, nthreads, triangle_integration, varargin)
 %used to integrate number 1 over the surface
 %outputs VL_out, (n_elem x 6) containing integrals of just (1) * hS * phi
 % n_elem used to be total # elements I guess
@@ -21,10 +21,10 @@ else
     refpoint = varargin{1};
 end
 
-rule = 2;  %1st rule has ridiculously inaccurate (too conservative) error estimates, so never converges to the tolerances
-[rule_constants.G, rule_constants.Weights, rule_constants.PTS] =  SMPRMS( 2, rule );  %always 2 dimensions and constant rule # for all integrals (2nd arg is rule #)
-coder.varsize('VRTS',[2 3 Inf],[true true true]);
-VRTS = [0 1 0; 0 0 1];
+% rule = 2;  %1st rule has ridiculously inaccurate (too conservative) error estimates, so never converges to the tolerances
+% [rule_constants.G, rule_constants.Weights, rule_constants.PTS] =  SMPRMS( 2, rule );  %always 2 dimensions and constant rule # for all integrals (2nd arg is rule #)
+% coder.varsize('VRTS',[2 3 Inf],[true true true]);
+% VRTS = [0 1 0; 0 0 1];
 % integrand_constants = []; %placeholder
 %[~, elem_range] = bounds_from_global_inds(Mesh);
 % VL_out = NaN(sum([Mesh.n_elements]),6);
@@ -73,7 +73,7 @@ for i_mesh = 1:length(Mesh)
         %don't scale reltol, since reltol should already account for area
         %since the integral itself should scale with area
         
-        [VL, ~, ~, ~] = adsimp( 2, VRTS, n_components, maxevals, abstol_scaled, reltol ,rule  , rule_constants,integrand_constants);
+        [VL, ~, ~, ~] = adsimp( 2, triangle_integration.reference_nodes, n_components, maxevals, abstol_scaled, reltol  , triangle_integration,integrand_constants);
         %VL is a 6 element vector that is the integral of hs * phi for this element
         VL_out_temp(local_elem,:) = VL;
         

@@ -537,6 +537,7 @@ if strcmp(assembly_input.problemtype,'freeswim')
         temp3(col_i, :) = -[1 +r(2) -r(1)];
         
         if strcmp(assembly_input.bugtype,'bacteria') && strcmp(assembly_input.tail.motorBC,'torque') && i_mesh_vert == 2 %need to solve for omega and col_i is on tail (hardcoded as submesh #2 now, need to generalize for more other bacteria models)
+           % - (motor_orientation X r)
             temp4(col_i) = -[motor_orientation(2)*r(3) - motor_orientation(3)*r(2)]; %non-tail verts remain zero and are copied back into A below needlessly, but this method allows the use of just one parfor loop
             temp5(col_i) = -[motor_orientation(3)*r(1) - motor_orientation(1)*r(3)];
             temp6(col_i) = -[motor_orientation(1)*r(2) - motor_orientation(2)*r(1)];
