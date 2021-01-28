@@ -165,6 +165,6 @@ set(e,'edgealpha',0.1);
 % figure(586); clf;  plot_mesh(Mesh(4),[3]);   axis tight;  light;
 % fucked = 11 17 34 35 37 38 39 40 54 55 60 61 82 83 98 99 100
 %%
-%  export_fig(gcf,['C:\Users\rudi\Desktop\RD\pape main results\figures\','Body 6x Tail','.png'],'-r400','-transparent');
+  export_fig(gcf,['C:\Users\rudi\Desktop\RD\pape main results\figures\','Body 6x Tail','.png'],'-r400','-transparent');
 
 % figure;  plot_mesh(Mesh(2));   light

@@ -75,8 +75,6 @@ if isempty(varargin)
                      [rotmat] = rotmat_all * rotmat_motor; % compose tail rotation and overall rotations into one rotation matrix
             end
             
-           
-            
             %         rotmat = rotation_matrix('z',angles(3)) * rotation_matrix('y',angles(2)) * rotation_matrix('x',angles(1));
             blk = kron(speye(Mesh(ii).n_vert),rotmat);  %using sparse is *a lot* faster than not - I checked.  also, mexed version of this function is slower - turns out shatlab is actually pretty good at some things
             

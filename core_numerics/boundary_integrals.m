@@ -1,4 +1,4 @@
-function [BI_coll, RHS_coll, BI_coll0, RHS_coll0] = boundary_integrals(x0_parameters, global_node_ind, Mesh, mesh_node_parameters, Network, matrix_props, index_mapping, BI_parameters , firstrun)
+function [BI_coll, RHS_coll, BI_coll0, RHS_coll0] = boundary_integrals(x0_parameters, global_node_ind, Mesh, mesh_node_parameters, Network, Repulsion, matrix_props, index_mapping, BI_parameters , firstrun)
 
 % for field vel calc, input some placeholder global_node_ind like NaN since the field point (e.g. network node) doesn't have a global mesh node ind, it is
 % higher than the bounds of the global mesh node inds
@@ -107,17 +107,19 @@ end
 
 %         RHS_temp0 = zeros(3,matrix_props.n_RHS);
 for mesh_ind_elem = 1:length(Mesh)
-    % ignore interaction if the element submesh is not a member of any submeshes the coll pt is on
-    if BI_parameters.accuracy.mesh.ignore_interaction && ~ismember( mesh_ind_elem, x0_parameters.submeshes )
-        
-        %collocation point and element are in different submeshes - skip integrals
-        continue
-    end
+
     
     % if coll pt is a member of the element-containing submesh, then can do tensor rotations since the coll pt and element must be rigidly connected, even if
     % another submesh the coll pt belongs to is deforming
     if BI_parameters.performance.rigid_body_matrix_rotation && ~firstrun && Mesh(mesh_ind_elem).is_mesh_rigid && ismember( mesh_ind_elem , x0_parameters.submeshes )
         % we can simply rotate the tensor contributions coming from the nodes on this element instead of integrating again
+        continue
+    end
+    
+        % ignore interaction if the element submesh is not a member of any submeshes the coll pt is on
+    if BI_parameters.accuracy.mesh.ignore_interaction && ~ismember( mesh_ind_elem, x0_parameters.submeshes )
+        
+        %collocation point and element are in different submeshes - skip integrals
         continue
     end
     
@@ -179,21 +181,21 @@ for mesh_ind_elem = 1:length(Mesh)
         %current element, with respect to current collocation point
         integrand_constants.integral_type = "reg_stokeslet";
         
-        if BI_parameters.performance.debug_mode
+%         if BI_parameters.performance.debug_mode
             % shatlab hangs at almost no CPU usage with the tic/toc
             % inside adsimp so timing inside the parfor doesn't work even though it
             % compiles without errors
             %[SL_elem, AE, NV, FL, Time] = adsimp( 2, reference_nodes, 54,  BI_parameters.accuracy.integration_tol.traction.maxevals,abstol, BI_parameters.accuracy.integration_tol.traction.reltol ,rule  , rule_constants ,element_nodes,shape_parameters,integrand_constants,'reg_stokeslet', true);
-            [SL_elem, AE, NV, FL] = adsimp( 2, BI_parameters.accuracy.triangle_integration.reference_nodes, 54,  BI_parameters.accuracy.mesh.integration_tol.stokeslet.maxevals,abstol_stokeslet, BI_parameters.accuracy.mesh.integration_tol.stokeslet.reltol ,BI_parameters.accuracy.triangle_integration,integrand_constants);
+%             [SL_elem, AE, NV, FL] = adsimp( 2, BI_parameters.accuracy.triangle_integration.reference_nodes, 54,  BI_parameters.accuracy.mesh.integration_tol.stokeslet.maxevals,abstol_stokeslet, BI_parameters.accuracy.mesh.integration_tol.stokeslet.reltol ,BI_parameters.accuracy.triangle_integration,integrand_constants);
             %                     SL_elem = ones(54,1);  AE = ones(54,1);  NV = 1;  FL = 1;
-        else %don't bother storing extra outputs
+%         else %don't bother storing extra outputs
             %                     [SL_elem, ~, ~, ~, ~] = adsimp( 2, reference_nodes, 54,  BI_parameters.accuracy.integration_tol.traction.maxevals,abstol, BI_parameters.accuracy.integration_tol.traction.reltol ,rule  , rule_constants ,element_nodes,shape_parameters,integrand_constants,'reg_stokeslet', false);
             
             [SL_elem, ~, ~, ~] = adsimp( 2, BI_parameters.accuracy.triangle_integration.reference_nodes, 54,  BI_parameters.accuracy.mesh.integration_tol.stokeslet.maxevals,abstol_stokeslet, BI_parameters.accuracy.mesh.integration_tol.stokeslet.reltol ,BI_parameters.accuracy.triangle_integration,integrand_constants);
             %                 SL_elem = ones(54,1);  AE = ones(54,1);  NV = 1;  FL = 1;
             SL_elem = SL_elem * 1/2 / BI_parameters.constants.mu;  % assumes that solid angle (2*pi for a smooth region) multiplies u_c on left side of BIE
             
-        end
+%         end
         %               out =  hS*[S(1,1)*phi; S(1,2)*phi; S(1,3)*phi; ...
         %             S(2,1)*phi; S(2,2)*phi; S(2,3)*phi; ...
         %             S(3,1)*phi; S(3,2)*phi; S(3,3)*phi];
@@ -419,7 +421,7 @@ for mesh_ind_elem = 1:length(Mesh)
         if BI_parameters.performance.rigid_body_matrix_rotation && firstrun && Mesh(mesh_ind_elem).is_mesh_rigid && ismember(mesh_ind_elem , x0_parameters.submeshes)
             
             BI_coll0 = BI_coll0 + BI_elem;
-            RHS_coll0 = RHS_coll0 + RHS_elem;   % this version of BI_coll will only have constributions from integrals for elements and coll
+            RHS_coll0 = RHS_coll0 + RHS_elem;   % this version of BI_coll will only have contributions from integrals for elements and coll
             % pts on the same rigid body
         end
         
@@ -434,13 +436,11 @@ end % submeshes
 temp = zeros(3,1);
 for network_node_ind = 1:Network.n_nodes
     
-    temp = temp + calcS(Network.nodes(network_node_ind,:)',x0_parameters.x0,BI_parameters.accuracy.network.eps2) * Network.g(network_node_ind,:)' ;
+    temp = temp + calcS(Network.nodes(network_node_ind,:)',x0_parameters.x0,BI_parameters.accuracy.network.eps2) * ( Network.g(network_node_ind,:) + Repulsion.F(network_node_ind,:) )' ;
 
     %% make sure this is zero for no links
 end
-if any(temp) ~= 0
-    stopa
-end
+
 RHS_coll = RHS_coll - 1/BI_parameters.constants.mu * 1/2 * temp; % moving sum over Stokeslets from LHS to RHS, so subtract
 
 % will never be able to do any recycling via RHS_coll0 for network nodes since they will always move relative to all other nodes?

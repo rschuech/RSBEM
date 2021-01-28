@@ -79,13 +79,15 @@ switch getenv('computername')
         cd C:\Users\rudi\Desktop\RD\git_code2\;
         
         
-        inputs.paths.datfolder = 'C:\Users\rudi\Desktop\RD\dino_mesh_automation\phases_hairs_2_1.5\final\';
+%         inputs.paths.datfolder = 'C:\Users\rudi\Desktop\RD\dino_mesh_automation\phases_hairs_2_1.5\final\';
+          inputs.paths.datfolder = 'C:\Users\rudi\Desktop\RD\test meshes\';
         prefix = '';
         
 %         inputs.paths.intersections_file = 'C:\Users\rudi\Desktop\RD\submesh_intersections.mat';
         rack = getenv('computername');
         inputs.paths.rack = rack;
-        inputs.paths.results_folder = 'C:\Users\rudi\Desktop\RD\pape main results\coplanar_2_again\';
+%         inputs.paths.results_folder = 'C:\Users\rudi\Desktop\RD\pape main results\coplanar_2_again\';
+          inputs.paths.results_folder = 'C:\Users\rudi\Desktop\RD\temp\';
         %         inputs.paths.results_file = results_file_name;
         
         inputs.paths.results_file = [rack,'.mat'];
@@ -97,7 +99,7 @@ switch getenv('computername')
         else
             inputs.paths.global_lock_file = 'X:\Results\global_lock';
         end
-        distcomp.feature( 'LocalUseMpiexec', false ); %fixes bug in parallel toolbox as of 2015a
+%         distcomp.feature( 'LocalUseMpiexec', false ); %fixes bug in parallel toolbox as of 2015a
         %         inputs.paths.dumpfolder = 'C:\Users\rudi\Desktop\RD\cleaner_dumps\';
         %          inputs.paths.dumpfolder = 'C:\Users\rudi\Desktop\RD\dino_dumps\';
         inputs.paths.dumpfolder = inputs.paths.results_folder;
@@ -280,7 +282,7 @@ end
 % Dave suggests the matrix built with this true might be sparse and good for preconditioning the full system (with this false) with an iterative solver
 inputs.accuracy.mesh.ignore_interaction = false;
 
-inputs.performance.rigid_body_matrix_rotation = false;  % if there are any rigid bodies in a free-swimming problem, e.g. cell body or rigid bacterial tail, there is no 
+inputs.performance.rigid_body_matrix_rotation = true;  % if there are any rigid bodies in a free-swimming problem, e.g. cell body or rigid bacterial tail, there is no 
 % need to recompute boundary integral contributions at new times or beat phases for collocation pts and elements both on the same rigid body.  Instead, can apply a rotation to the
 % initial tensors / vectors in the matrix / RHS for each BIE in the system.  Can also do this with combo resistance/mobility runs on the same geometry, 
 % computing everything for the resistance problem and then recycling the rigid body integrals for all times/phases in the mobility problem.
@@ -323,7 +325,7 @@ end
 f2 = 1/2/2/2    *100  ;
 
 inputs.accuracy.mesh.epsilon.default =  4E-5 *factor; % used if a value not specified for a particular submesh
-inputs.accuracy.mesh.epsilon.Body = 4E-5; inputs.accuracy.mesh.epsilon.Tail = 4E-5;
+inputs.accuracy.mesh.epsilon.Body = 4E-5 * 100; inputs.accuracy.mesh.epsilon.Tail = 4E-5 * 100;
 inputs.accuracy.mesh.epsilon.Transverse = 10E-9 * 1E6 / 2;  % transverse sheet is theoretically 2 layers of cell membrane, each 5 nm thick.  eps should be the radius of a thin structure
 inputs.accuracy.mesh.epsilon.Coplanar_Hairs = 10E-9 * 1E6 / 2; % conveniently, hairs all also theoretically 10 nm wide
 inputs.accuracy.mesh.epsilon.Normal_Top_Hairs = 10E-9 * 1E6 / 2;
@@ -353,7 +355,7 @@ inputs.accuracy.mesh.integration_tol.stokeslet.maxevals = Inf; %don't limit maxe
 %force tolerances are for integrating simply 1 * hS * phi over the
 %surface.  this is used primarily for integrating force, e.g. for the
 %free-swimming force balance equations.
-inputs.accuracy.mesh.integration_tol.force.abstol = 1E-4   *factor  * f2; %1E-7
+inputs.accuracy.mesh.integration_tol.force.abstol = 1E-4   *factor  ; %1E-7
 inputs.accuracy.mesh.integration_tol.force.reltol = 0;
 inputs.accuracy.mesh.integration_tol.force.maxevals = Inf;
 
@@ -361,7 +363,7 @@ inputs.accuracy.mesh.integration_tol.force.maxevals = Inf;
 %where r is a lever-arm from a specified reference point.  this is
 %primarily used for integrating torques, e.g. for the free-swimming
 %torque balance equations
-inputs.accuracy.mesh.integration_tol.torque.abstol = 1E-4  *factor  * f2; %1E-5
+inputs.accuracy.mesh.integration_tol.torque.abstol = 1E-4  *factor  ; %1E-5
 inputs.accuracy.mesh.integration_tol.torque.reltol = 0;  %2.5E-5
 inputs.accuracy.mesh.integration_tol.torque.maxevals = Inf;
 
@@ -574,8 +576,10 @@ if strcmp(inputs.bugtype, "bacteria")
         % inputs.tail.motorBC = {"torque","freq"};
         inputs.Tail.motorBC = "torque";
         %in both cases, power theoretically varies
-        inputs.Tail.motor_torque = 1E3;  % ug um/s^2 um = fN um (femto N um)  yields about 100 Hz rotation rate = 617 rad / sec
+%         inputs.Tail.motor_torque = 1E3;  % ug um/s^2 um = fN um (femto N um)  yields about 100 Hz rotation rate = 617 rad / sec
         % max E coli torque reported to be 2000 pN nm = 2000 fN um (KK Mandadapu - ‎2015) so this works out
+        t_stop = 0.1; torque0 = 1E3;
+        inputs.Tail.motor_torque = ( @(t) motor_torque(t, torque0, t_stop) );
         
         % inputs.tail.motor_freq = 100 *2*pi ;  %rad / sec
         inputs.Tail.motor_freq = 468 ;  %rad / sec
@@ -792,9 +796,15 @@ clear sweep* iter_parameters* inputs values fieldpaths
 % Inputs.Body.shape = "ellipsoid"
 
 % Inputs.paths.namebase.Body = "ellipsoid_AR1_1.67_AR2_1.67"
-Inputs.paths.namebase.Body = "curved_rod_AR1_1_AR2_0"
+% Inputs.paths.namebase.Body = "curved_rod_AR1_1_AR2_0"
+Inputs.paths.namebase.Body = "coarse_sphere"
 % Inputs.paths.namebase.Tail = "tail_radius_0.031018_amp_0.402_lambda_2.9032_nlambda_1.49"
 Inputs.paths.namebase.Tail = "longer_tail"
-Inputs.paths.namebase.Tail = "short_tail"
-Inputs.paths.namebase.full = "shum_test"
+% Inputs.paths.namebase.Tail = "short_tail"
+% Inputs.paths.namebase.Tail = "tail_unrefined"
+% Inputs.paths.namebase.full = "shum_test"
 % Inputs.Body.shape = "ellipsoid"
+% Inputs.paths.namebase.Body = "refined_sphere"
+
+clear matrix_assembly_mex
+

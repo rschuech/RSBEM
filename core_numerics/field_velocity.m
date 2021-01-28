@@ -1,4 +1,4 @@
-function [u_field] = field_velocity(Mesh,Network, x_field, solution, matrix_props,index_mapping,mesh_node_parameters,assembly_input)
+function [u_field] = field_velocity(Mesh,Network, Repulsion, x_field, solution, matrix_props,index_mapping,mesh_node_parameters,assembly_input)
 
 [refpoint, motor_orientation] = get_rotational_references(Mesh, assembly_input);
 
@@ -28,7 +28,25 @@ tic
 %numels_max = double(intmax('int32'));  %dumb Coder limit on numel of any array
 
   
-BI_parameters = assembly_input;
+% BI_parameters = assembly_input;
+% BI_parameters.Tail = rmfield(BI_parameters.Tail,'motor_torque'); % don't need this for BIEs, only comes in on RHS of additional constraint eqs later
+% % and we want to generalize it as a function of time
+% BI_parameters = rmfield(BI_parameters,'repulsion');
+
+BI_parameters.performance.eliminate_DL = assembly_input.performance.eliminate_DL;
+BI_parameters.performance.DL_singularity_removal = assembly_input.performance.DL_singularity_removal;
+BI_parameters.performance.rigid_body_matrix_rotation = assembly_input.performance.rigid_body_matrix_rotation;
+BI_parameters.performance.verbose = assembly_input.performance.verbose;
+BI_parameters.problemtype = assembly_input.problemtype;
+BI_parameters.rotating_flagellum = assembly_input.rotating_flagellum;
+BI_parameters.Tail.motorBC = assembly_input.Tail.motorBC;
+BI_parameters.Tail.submesh_index = assembly_input.Tail.submesh_index;
+BI_parameters.Tail.motor_orientation = assembly_input.Tail.motor_orientation;
+BI_parameters.accuracy = assembly_input.accuracy;
+BI_parameters.constants = assembly_input.constants;
+
+
+
 x0_location = "off_mesh";
 BI_parameters.constants.refpoint = refpoint;
 BI_parameters.Tail.motor_orientation = motor_orientation;
@@ -81,9 +99,9 @@ x0_parameters.u = NaN(3,1); % should only ever be used in conjunction with singu
 
 
     firstrun = true;
-   [BI_coll, RHS_coll] = boundary_integrals_mexed(x0_parameters, NaN, Mesh, mesh_node_parameters, Network2, matrix_props, index_mapping2, BI_parameters, firstrun );
+   [BI_coll, RHS_coll] = boundary_integrals_mexed(x0_parameters, NaN, Mesh, mesh_node_parameters, Network2, Repulsion, matrix_props, index_mapping2, BI_parameters, firstrun );
 % RHS_coll will be zero if eliminating the DL, since that's the only contribution to the RHS besides from the original u-side of the BIE, which is not incorporated
-% here since we're solving for it
+% here since we're solving for it when we calculate field velocities
   
 
 % diffs = A([x_field_ind, matrix_props.n_collocation + x_field_ind, matrix_props.n_collocation*2 + x_field_ind],1:matrix_props.n_collocation*3) - BI_coll(:,1:matrix_props.n_collocation*3);

@@ -3,7 +3,10 @@ function [colors] = colordata(n,mapname,limits,data)
 
 %n = 20;  % # unique colors; higher --> smoother colormap
 
-eval(['colors = colormap(',mapname,'(n));']); %will pick from these colors to color each data point
+% eval(['colors = colormap(',mapname,'(n));']); %will pick from these colors to color each data point
+
+colors = whitejet(n);
+
 
 colorlo = limits(1);  %data value to be mapped to first color.  data below this saturates
 colorhi = limits(2); %data value to be mapped to last color     data above this saturates

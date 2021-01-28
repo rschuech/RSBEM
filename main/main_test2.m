@@ -9,6 +9,7 @@ inputs_loop_tic = tic;
 %addpath(genpath('./')); %add all subfolders to path so that subfunctions will be found
 solutions_temp = [];
 D = [];
+% clear matrix_assembly_mex
 
 %bad_sweep_i = false(1,length(Inputs));  %keep track of which runs were bad due to not having mesh files
 for sweep_i = 1:length(Inputs)
@@ -173,8 +174,15 @@ for sweep_i = 1:length(Inputs)
         Mesh(1).refpoints = [0 0 0]';   %probably center
     end
     
+    [bounding_sphere.R,bounding_sphere.C]=ExactMinBoundSphere3D(Mesh(1).nodes);
+    Mesh(1).refpoints(:,2) = bounding_sphere.C;  % the first refpoint could be defined anywhere but this 2nd refpoint will be the center of the bounding sphere
+    % for use in finding network nodes close to the body
+    
+    
     if length(Mesh) == 2 && input.include_tail
-        Mesh(2).refpoints = [0 0 0]';  % will be used for torque calculations - OK as long as somewhere along motor axis
+        Mesh(2).refpoints = [0 0 0; min(Mesh(2).nodes(:,1)) 0 0]';  % will be used for torque calculations - OK as long as somewhere along motor axis
+        
+        
     end
     
     
@@ -334,14 +342,32 @@ for sweep_i = 1:length(Inputs)
     end
     
     
+    for i = 1:length(Mesh)
+        Mesh(i).rotation_matrix = eye(3);  % will store rotation matrix needed to go from initial submesh orientation to current orientation
+    end
+    
     
         initialize_network;  % so far, just assuming a single network, but could generalize in future to have multiple "subnetworks" like submeshes
     % hence, putting it inside a cell in case we have more struct elements and cells here in the future
 %     index_mapping.local_node2global_node.networks = {[1:Network.n_nodes]'};
     
-    
-    
-    
+repulsion.d = 0.05; % 0.1 worked   0.01 doesn't work, even with 10000*max(Network.E)   0.05 didn't work, with 100*maxE
+% 50 nm apparently realistic according to "Fluid flow and sperm guidance" Ishimoto et al
+repulsion.g = 50; %max(Network.E);  %  10 um * E ?N/m = largest spring force expected    100*max(Network.E) worked
+% 100*max(E) results in mega failed ode45 steps.  1*max(E) results in no
+% failed steps and 10x faster timestepping vs 100*max(E) case.  10*max(E)
+% also results in mega failed steps.
+
+   repulsion.mindist2 = [bounding_sphere.R + repulsion.d*2,                    Inf*repulsion.d*2; ...  % setting mesh node distance to Inf allows us to detect all network nodes inside mesh, even if far inside
+                        (input.Tail.amp + input.Tail.radius) + repulsion.d*2,  Inf*repulsion.d*2  ].^2;
+%      repulsion.mindist2 = [bounding_sphere.R*2.5, repulsion.d*3; (input.Tail.amp + input.Tail.radius)*1.05,  repulsion.d*3  ].^2;
+%      repulsion.mindist2 = [bounding_sphere.R*1.2,  repulsion.d*3;      (input.Tail.amp + input.Tail.radius)*1.05,  repulsion.d*3  ].^2;
+
+% min_dists2 is n_submeshes x 2, first column is min distance^2 away from body centroid or tail axis line segment to be worth caring about
+% 2nd column is min distance^2 away from closest mesh node to be worth caring about
+% if point passes both those tests, we compute the exact distance to the closest point on the closest mesh element
+
+
     % make smaller version of input struct with just variables needed to assemble A
     % matrix, to reduce pain of re-mexing if input struct is modified
     clear assembly_input
@@ -413,6 +439,7 @@ end
     else
         assembly_input.performance.rigid_body_matrix_rotation = input.performance.rigid_body_matrix_rotation;
     end
+    assembly_input.performance.rigid_body_tensor_storage = input.performance.rigid_body_tensor_storage;
     
     %     assembly_input.constants.multfactor = input.constants.multfactor;
     assembly_input.constants.mu = input.constants.mu;  %not actually needed for matrix assembly, but needed for yprime() during timestepping interpolation
@@ -428,8 +455,9 @@ end
     assembly_input.performance.debug_mode = input.performance.debug_mode;
     assembly_input.performance.numels_max = input.performance.numels_max;
     assembly_input.performance.verbose = input.performance.verbose;
-    
-    
+    assembly_input.repulsion = repulsion;
+    assembly_input.link_breakage_distance = 0*0.2; % links break if the closest point from the link line segment to any body node is less than this
+    % (should really compute closest distance to curved mesh, but this is good enough?)
     
     switch input.problemtype
         case "resistance"

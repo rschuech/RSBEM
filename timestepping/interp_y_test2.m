@@ -67,8 +67,10 @@ end
 % index_mapping2 = index_mapping;
 % index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
 % index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
+t = 0;
+Repulsion = calc_repulsive_forces(Mesh, Network, index_mapping, assembly_input.repulsion);
 
-[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,Network, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
+[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,Network, Repulsion, matrix_props,index_mapping,mesh_node_parameters,assembly_input, t);
 
             if input.performance.verbose
                 disp(['Matrix assembly wrapper took ',num2str(toc(temp))]);

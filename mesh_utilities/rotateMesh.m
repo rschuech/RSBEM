@@ -74,4 +74,7 @@ for i = inds
     
      Mesh(i) = shiftMesh(Mesh(i), refpoint); % shift this submesh so that refpoint is what is was originally, yielding a rotation around the refpoint
     
+     
+     Mesh(i).rotation_matrix = rotmat * Mesh(i).rotation_matrix; % current orientation is obtained by applying new rotation after the previous rotation
+     
 end

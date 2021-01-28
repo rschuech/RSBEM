@@ -1,13 +1,25 @@
-function [dydt, Mesh, Network] = derivatives(t,y, Mesh, Network, mesh_node_parameters, index_mapping, matrix_props, assembly_input)
+function [dydt, Mesh, Network, Repulsion] = derivatives(t,y, Mesh, Network, mesh_node_parameters, index_mapping, matrix_props, assembly_input)
 
 %% Update Mesh and Network based on y
 [Mesh, Network, mesh_node_parameters, y_swimmer, r] = update_Mesh_Network(Mesh, Network, t, y, mesh_node_parameters,index_mapping, assembly_input);
  
+% is_broken = Network.E == 0; % all broken links, both that were already broken and that just broke
 % [Mesh_bodyframe, mesh_node_parameters_bodyframe, A_1_bodyframe] = rotateMesh(Mesh,Mesh(2).refpoints(:,1),mesh_node_parameters,index_mapping, ...
 %     2, y(end),Mesh(2).orientation);
 %%
+Repulsion = calc_repulsive_forces(Mesh, Network, index_mapping, assembly_input.repulsion);
+% [min_dist, Repulsion.x, xi_eta, Repulsion.mesh_index, element_index, is_inside] = dist2mesh(Network.nodes, Mesh, assembly_input.repulsion.mindist2); 
+% too_close = min_dist < repulsion.d;
+% vec = Network.nodes(too_close,:) - Repulsion.x(too_close,:);
+% dir = vec ./ sqrt(  sum( ( vec ).^2 , 2 ) );
+% Repulsion.F = zeros(Network.n_nodes,3);
+% % repulsion forces on network nodes
+% Repulsion.F(too_close,:) = repulsion.g * ( exp(-min_dist(too_close)/repulsion.d) - exp(-1) ) ./ (1 - exp(-min_dist(too_close)/repulsion.d)) .* dir .* (1 - 2*is_inside(too_close));
+% % if is_inside = 0, then we multiply by 1; if is_inside = 1, then we multiply by -1, meaning we actually have a force pulling the offending network node toward the
+% % mesh, in the outward direction in hopes it will exit soon
+%%
 
-[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,Network, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
+[ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,Network, Repulsion, matrix_props,index_mapping,mesh_node_parameters,assembly_input, t);
 
 [solution] = matrix_solve(assembly_input, matrix_props, A_temp, RHS);
 
@@ -53,7 +65,7 @@ end
 
 % solution_fixedframe = [ reshape(  A_1 * reshape( solution(1:end-1), 3,[]) , [], 1); solution(end) ];
 
-[u_network_nodes] = field_velocity(Mesh,Network, Network.nodes, solution, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
+[u_network_nodes] = field_velocity(Mesh,Network, Repulsion, Network.nodes, solution, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
 
 
 % y = [l; u_network; U; Omega; omega]

@@ -72,7 +72,7 @@ function [A_force, A_torque] = compute_force_torque_matrices(Mesh, matrix_props,
             
             temp = zeros(3,matrix_props.n_collocation*3);
             % below uses linear indexing, as if we did inds(:) and indexed into that vector
-            % the vector would be [6 column inds for x components; 6 column inds for x components; 6 column inds for z components]
+            % the vector would be [6 column inds for x components; 6 column inds for y components; 6 column inds for z components]
             temp(1,inds(1:6)) = VL_unity_submesh(elem_i,:); % x component?
             temp(2,inds(7:12)) = VL_unity_submesh(elem_i,:); % y component?
             temp(3,inds(13:18)) = VL_unity_submesh(elem_i,:); % z component?
