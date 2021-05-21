@@ -134,10 +134,12 @@ for p = 1:size(points,1) % parfor is slower ?
                 objfun = @(xe) dist(xe,points(p,:)',Mesh(j).nodes(Mesh(j).elements(element_inds(end),:), :),Mesh(j).shape_parameters(element_inds(end),:));
                 
                 flag = NaN;
+                 rng(0);
                 for g = 1:25 % if none of 25 random initial guesses don't work, something prolly wrong
                     if g == 1
                         guess = [1/3 1/3]'; % original choice seems to nearly always work....
                     else
+                       
                         while true
                             guess = rand(2,1); % xi, eta between 0 and 1
                             if sum(guess) < 1 % within reference triangle
@@ -251,16 +253,26 @@ for p = 1:size(points,1) % parfor is slower ?
         end % cc = 1:size(solutions,1)
         
         if abs(dotprod) < 0.3 %&&  distance2mesh(p) >
-            error('could not find reasonable normal vector in any interrogated elements')
+            %             error('could not find reasonable normal vector in any interrogated elements')
+            %
+            %             figure(834);  clf; [s,e] = plot_mesh(Mesh(1),3);
+            %
+            %             hold on
+            %             nn = plot3(points(p,1),points(p,2),points(p,3),'ko','MarkerFaceColor','k');
+            %             cp = plot3(x_temp(1),x_temp(2),x_temp(3),'ro','MarkerFaceColor','r');
+            %             q1 = quiver3(x_temp(1),x_temp(2),x_temp(3),n(1),n(2),n(3),'k','LineWidth',1.5);
+            %             pv = (pvec / sqrt(sum(pvec.^2)));  q2 = quiver3(x_temp(1),x_temp(2),x_temp(3),pv(1),pv(2),pv(3),'r','LineWidth',1.5);
+            %             hold off
             
-            figure(834);  clf; [s,e] = plot_mesh(Mesh(2),3);
+            % now that we're using a threshold for distance inside, just going to
+            % assume that we are outside if we can't figure it out
+            % expect this to happen often right after we put nodes back on the mesh,
+            % since distance2mesh will be tiny and the vector from x to the node will
+            % be nearly tangent to the mesh, and the dotprod nearly zero - just can't
+            % be sure whether we're inside or outside but it doesn't really matter
             
-            hold on
-            nn = plot3(points(p,1),points(p,2),points(p,3),'ko','MarkerFaceColor','k');
-            cp = plot3(x_temp(1),x_temp(2),x_temp(3),'ro','MarkerFaceColor','r');
-            q1 = quiver3(x_temp(1),x_temp(2),x_temp(3),n(1),n(2),n(3),'k','LineWidth',1.5);
-            pv = (pvec / sqrt(sum(pvec.^2)));  q2 = quiver3(x_temp(1),x_temp(2),x_temp(3),pv(1),pv(2),pv(3),'r','LineWidth',1.5);
-            hold off
+            % leave is_inside(p) as false, the initialized value
+            continue
         end
         
         
@@ -276,4 +288,8 @@ for p = 1:size(points,1) % parfor is slower ?
     
 end
 
+
+if any(is_inside)
+    1;
+end
 % optcount

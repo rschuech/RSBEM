@@ -26,6 +26,7 @@ end
 
 
 
+
 % we will still keep track of both active and passive nodes here
 Repulsion.network_node_indices = find(too_close);
 Repulsion.mesh_index = mesh_index(too_close);

@@ -62,16 +62,17 @@ clear matrix_assembly_mex
 solver = @ode45;
 
 % 'RelTol',5E-4,'AbsTol',5E-4,  originally
+% defaults are 1E-3, 1E-6
 % timestepping_tol.reltol = 1E-6;
 % timestepping_tol.abstol = 1E-10;
 % timestepping_tol.reltol = 5E-4;
 % timestepping_tol.abstol = 5E-4;
-timestepping_tol.reltol = 1E-5;
+timestepping_tol.reltol = 1E-3;
 timestepping_tol.abstol = 1E-8;
-timestepping_tol.reltol = 5E-4;
-timestepping_tol.abstol = 5E-4;
+% timestepping_tol.reltol = 5E-4;
+% timestepping_tol.abstol = 5E-4;
 
-[sol, stored_output ] = timestepping_wrapper([], [], 0.01, Mesh0, Network0, mesh_node_parameters, index_mapping, matrix_props, assembly_input,timestepping_tol, solver);
+[sol, stored_output, trespassers ] = timestepping_wrapper([], [],y0, 0.01, Mesh0, Network0, mesh_node_parameters, index_mapping, matrix_props, assembly_input,timestepping_tol, solver);
 
 clear textprogressbar
 % tfinals = 0.005:0.005:2;
@@ -80,8 +81,47 @@ for tfinal = tfinals
     if sol.x(end) >= tfinal
         continue
     end
-   [sol, stored_output ] = timestepping_wrapper([sol], [stored_output], tfinal, Mesh0, Network0, mesh_node_parameters, index_mapping, matrix_props, assembly_input,timestepping_tol, solver);
-%     save('c:\Users\rudi\Desktop\RD\temp\broken.mat','sol');
+   [sol, stored_output , trespassers] = timestepping_wrapper([sol], [stored_output],y0, tfinal, Mesh0, Network0, mesh_node_parameters, index_mapping, matrix_props, assembly_input,timestepping_tol, solver);
+% if any(trespassers.is_inside)
+  if any(trespassers.distance2mesh(trespassers.is_inside) >= 0.006 )
+      pause
+      
+%       Network_temp = Network0;
+%        Network_temp.E( ~isnan(stored_output.link_breakage_time) ) = 0;  % permanently set E = 0 each time a link breaks
+% the hell with it, the links don't matter for just figuring out where the
+% network nodes are relative to the swimmer when the event occurs
+      [Mesh, Network, mesh_node_parameters, y_swimmer, r] = update_Mesh_Network(Mesh0, Network0, sol.xe(end), sol.ye(:,end), mesh_node_parameters,index_mapping, assembly_input);
+      
+        [distance2mesh, x, xi_eta, mesh_index, element_index, is_inside] = dist2mesh(Network.nodes, Mesh, index_mapping, assembly_input.repulsion.mindist2);
+        
+%         Network.l = y(1:Network.n_links);
+network_nodes = reshape( sol.ye(Network.n_links + 1 : Network.n_links + Network.n_nodes*3, end) , 3,[])';
+        network_nodes( is_inside,: ) = x(is_inside, :);
+
+       network_nodes = [ reshape(network_nodes', Network.n_nodes*3,1) ];
+       
+ y0_new = sol.ye(:,end);
+ 
+       y0_new( Network.n_links + 1 : Network.n_links + Network.n_nodes*3  ) = network_nodes;
+        
+       
+       
+       
+       % last value of sol should be the same as the event, exactly at the
+       % threshold, so ideally want to keep this, but then sol definitely
+       % won't line up with stored_output (which won't have output at the
+       % exact threshold since the solver doesn't actually take a step at
+       % the event) so perhaps for now just overwrite the event moment in
+       % sol, so we generally have the solution at the step before the
+       % event, and then the right side of the discontinuity when the nodes
+       % are moved onto the mesh
+       % last value of stored_output should be the overshoot of the
+       % threshold but it should get overwritten by default when we do
+       % odextend
+      
+  end
+% end
+   %     save('c:\Users\rudi\Desktop\RD\temp\broken.mat','sol');
 end
 
 %%

@@ -425,8 +425,6 @@ for mesh_ind_elem = 1:length(Mesh)
             % pts on the same rigid body
         end
         
-        
-        
     end  % elements
     
 end % submeshes

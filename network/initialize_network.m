@@ -16,11 +16,17 @@ x = linspace(0.5,4,m(1)); % cube 20 um wide
 y = 4*linspace(-1,1,m(2)) ;
 z = 4*linspace(-1,1,m(3)) ;
 
-
 m = [4 12 12]  ;
 x = linspace(0.65,4,m(1)); % cube 20 um wide
-y = 4.1*linspace(-1,1,m(2)) ;
+y =  4.1*linspace(-1,1,m(2)) ;
 z = 4.1*linspace(-1,1,m(3)) ;
+
+% m = [4 12 12]  ;
+% x = linspace(0.65,4,m(1)); % cube 20 um wide
+% h = x(2) - x(1);
+% x = 0.65:h:16; % about 3 times longer, 12 layers vs 4
+% y =  4.1*linspace(-1,1,m(2)) ;
+% z = 4.1*linspace(-1,1,m(3)) ;
 
 
 % single plane of points around body
@@ -80,12 +86,28 @@ Network.links = links;
 % Network.nodes = [ Network.nodes; Mesh(1).nodes(1:2:end,:); Mesh(2).nodes(1:4:end,:)];
 % Network.n_nodes = size(Network.nodes,1);
 
-Network.E = repmat(10,Network.n_links,1);  % use 500 for repulsion testing   % was 50 usually
+Network.E = repmat(10,Network.n_links,1);  % was usually 10, stiffer was 100
+D = 0.6204;
+D = 1.5;
+D = 0; % no tunnel
+
+for i = 1:Network.n_links
+    dists = sqrt(  sum((  Network.nodes(  Network.links(i,:)  , 2:3 ) - repmat([0 0],2,1)  ).^2 , 2)  );
+    % distances from the two nodes making this link to the line y = 0, z = 0
+    if any( dists < D )  % if either node is within a body radius of swiming axis,  delete this link
+        Network.E(i) = 0;
+    end
+end
+
+
+
+
+
 Network.l_0 = sqrt(sum( (Network.nodes(Network.links(:,1),:)  - Network.nodes(Network.links(:,2),:) ).^2 , 2 ) );
 % Network.l_0 =  sqrt(sum(  (( Network.nodes(Network.links(:,1),:)  + Network.nodes(Network.links(:,2),:) ) / 2).^2 , 2));
 % resting lengths are the initial distances from the center of each link to the origin
 Network.l = Network.l_0;
-Network.eta = repmat(500,Network.n_links,1);
+Network.eta = repmat(500,Network.n_links,1);  % usually 500, stiffer is 5000
 Network.link_members = cell(Network.n_nodes,1);
 
 for i = 1:Network.n_nodes

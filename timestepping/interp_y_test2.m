@@ -72,6 +72,12 @@ Repulsion = calc_repulsive_forces(Mesh, Network, index_mapping, assembly_input.r
 
 [ A_temp, A_force_recycle, A_torque_recycle, RHS, A_motor_torque0] = matrix_assembly_mex_wrapper(Mesh,Network, Repulsion, matrix_props,index_mapping,mesh_node_parameters,assembly_input, t);
 
+
+condA = condest(A_temp)
+return
+
+
+
             if input.performance.verbose
                 disp(['Matrix assembly wrapper took ',num2str(toc(temp))]);
             end

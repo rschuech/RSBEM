@@ -1,7 +1,7 @@
-function [A, A_force, A_torque, RHS, A_motor_torque] = matrix_assembly_mex_wrapper(Mesh,Network, Repulsion, matrix_props,index_mapping,node_parameters,assembly_input, t)
+function [A, A_force, A_torque, RHS, A_motor_torque] = matrix_assembly_mex_wrapper(Mesh,Network, Repulsion, matrix_props,index_mapping,mesh_node_parameters,assembly_input, t)
 %wraps mexed function and assembles full A in native Matlab to avoid
 %ridiculous limit for matrix size in Coder
-
+%%
 %make sure we can even initialize the full damn thing before going further
 A = zeros(matrix_props.n_rows, matrix_props.n_cols); % entire matrix 
 RHS = zeros(matrix_props.n_rows, matrix_props.n_RHS);
@@ -12,16 +12,16 @@ RHS = zeros(matrix_props.n_rows, matrix_props.n_RHS);
 % index_mapping2.local_node2global_node = cell2struct(index_mapping.local_node2global_node,'indices',1);
 % index_mapping2.global_node2local_node = cell2struct(index_mapping.global_node2local_node,'indices',length(index_mapping.global_node2local_node));
 
-rng(0);
-rand_row_inds = randperm(matrix_props.n_collocation)';
-% rand_row_inds = 1:matrix_props.n_collocation;
+% rng(0);
+% rand_row_inds = randperm(matrix_props.n_collocation)';
+ rand_row_inds = 1:matrix_props.n_collocation;
 rand_row_inds = [rand_row_inds; rand_row_inds + matrix_props.n_collocation; rand_row_inds + 2*matrix_props.n_collocation; ];
 
 
 
 % A and RHS are now initialized inside matrix_assembly_mex but this can be easily done out here, then send them in and get them back out, modified 
 % in-place?
-        [A(rand_row_inds,:), RHS(rand_row_inds,:)] = matrix_assembly_mex(Mesh,Network, Repulsion, matrix_props,index_mapping,node_parameters,assembly_input);
+        [A(rand_row_inds,:), RHS(rand_row_inds,:)] = matrix_assembly_mex(Mesh,Network, Repulsion, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
         % pretty sure this unfortunately has A_BIE and A separately in memory but not sure how to avoid the two copies
         % because of parfor rules, we have to assemble the big BIE matrix block as one variable that can be reshaped between 3D and 2D - the reshaping does
         % not work if we include the extra rows and columns of full A
@@ -49,7 +49,7 @@ rand_row_inds = [rand_row_inds; rand_row_inds + matrix_props.n_collocation; rand
   
 %   if matrix_props.n_unknown_u > 0 % we have free-slip nodes
       rows = matrix_props.n_collocation*3+1  :  (matrix_props.n_collocation*3 + matrix_props.n_unknown_u*3); % row indices for additional free-slip constraints
-      [A(rows, :), RHS(rows, :)] = free_slip_constraints(Mesh, matrix_props,index_mapping,node_parameters,assembly_input);
+      [A(rows, :), RHS(rows, :)] = free_slip_constraints(Mesh, matrix_props,index_mapping,mesh_node_parameters,assembly_input);
 %   end
   
 %compute A_force and A_torque, either for direct output and

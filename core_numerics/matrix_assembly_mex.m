@@ -22,7 +22,10 @@ BI_parameters.rotating_flagellum = assembly_input.rotating_flagellum;
 BI_parameters.Tail.motorBC = assembly_input.Tail.motorBC;
 BI_parameters.Tail.submesh_index = assembly_input.Tail.submesh_index;
 BI_parameters.Tail.motor_orientation = assembly_input.Tail.motor_orientation;
-BI_parameters.accuracy = assembly_input.accuracy;
+BI_parameters.accuracy.mesh = assembly_input.accuracy.mesh;
+BI_parameters.accuracy.network = assembly_input.accuracy.network;
+BI_parameters.accuracy.triangle_integration = assembly_input.accuracy.triangle_integration;
+
 BI_parameters.constants = assembly_input.constants;
 
 
@@ -210,9 +213,9 @@ x0_location = "on_mesh";
 BI_parameters.constants.refpoint = refpoint;
 
 % coder.varsize('reference_nodes',[2 3 Inf],[true true true]); %for mex rules
-rng(0);
-rand_coll_inds = randperm(matrix_props.n_collocation);
-% rand_coll_inds = 1:matrix_props.n_collocation;
+% rng(0);
+% rand_coll_inds = randperm(matrix_props.n_collocation);
+ rand_coll_inds = 1:matrix_props.n_collocation;
 
 parfor (rand_global_node_ind = 1:matrix_props.n_collocation , assembly_input.performance.nthreads)  %rows of A_BIE in sets of 3, i.e. x y z components of BIE for each node
    
@@ -348,7 +351,7 @@ parfor (rand_global_node_ind = 1:matrix_props.n_collocation , assembly_input.per
     RHS_BIE(rand_global_node_ind,:,:) = RHS_coll;
     
     
-    %%
+    
     
     A_BIE(rand_global_node_ind,:,:) = BI_coll;
     

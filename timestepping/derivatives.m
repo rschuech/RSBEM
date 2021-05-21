@@ -8,6 +8,13 @@ function [dydt, Mesh, Network, Repulsion] = derivatives(t,y, Mesh, Network, mesh
 %     2, y(end),Mesh(2).orientation);
 %%
 Repulsion = calc_repulsive_forces(Mesh, Network, index_mapping, assembly_input.repulsion);
+% Repulsion = [];
+% Repulsion.network_node_indices = zeros(0,1);
+% Repulsion.mesh_index = zeros(0,1);
+% Repulsion.distance2mesh = zeros(0,1);
+% Repulsion.x = zeros(0,3);
+% Repulsion.is_inside = false(0,1);
+% Repulsion.F = zeros(0,3);
 % [min_dist, Repulsion.x, xi_eta, Repulsion.mesh_index, element_index, is_inside] = dist2mesh(Network.nodes, Mesh, assembly_input.repulsion.mindist2); 
 % too_close = min_dist < repulsion.d;
 % vec = Network.nodes(too_close,:) - Repulsion.x(too_close,:);

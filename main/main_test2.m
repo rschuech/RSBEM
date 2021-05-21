@@ -174,7 +174,7 @@ for sweep_i = 1:length(Inputs)
         Mesh(1).refpoints = [0 0 0]';   %probably center
     end
     
-    [bounding_sphere.R,bounding_sphere.C]=ExactMinBoundSphere3D(Mesh(1).nodes);
+    [bounding_sphere.R,bounding_sphere.C] = ExactMinBoundSphere3D(Mesh(1).nodes);
     Mesh(1).refpoints(:,2) = bounding_sphere.C;  % the first refpoint could be defined anywhere but this 2nd refpoint will be the center of the bounding sphere
     % for use in finding network nodes close to the body
     
@@ -353,7 +353,7 @@ for sweep_i = 1:length(Inputs)
     
 repulsion.d = 0.05; % 0.1 worked   0.01 doesn't work, even with 10000*max(Network.E)   0.05 didn't work, with 100*maxE
 % 50 nm apparently realistic according to "Fluid flow and sperm guidance" Ishimoto et al
-repulsion.g = 50; %max(Network.E);  %  10 um * E ?N/m = largest spring force expected    100*max(Network.E) worked
+repulsion.g = 50 * 0; %max(Network.E);  %  10 um * E ?N/m = largest spring force expected    100*max(Network.E) worked
 % 100*max(E) results in mega failed ode45 steps.  1*max(E) results in no
 % failed steps and 10x faster timestepping vs 100*max(E) case.  10*max(E)
 % also results in mega failed steps.
@@ -362,7 +362,8 @@ repulsion.g = 50; %max(Network.E);  %  10 um * E ?N/m = largest spring force exp
                         (input.Tail.amp + input.Tail.radius) + repulsion.d*2,  Inf*repulsion.d*2  ].^2;
 %      repulsion.mindist2 = [bounding_sphere.R*2.5, repulsion.d*3; (input.Tail.amp + input.Tail.radius)*1.05,  repulsion.d*3  ].^2;
 %      repulsion.mindist2 = [bounding_sphere.R*1.2,  repulsion.d*3;      (input.Tail.amp + input.Tail.radius)*1.05,  repulsion.d*3  ].^2;
-
+repulsion.mindist2 = [bounding_sphere.R*1.02*0     Inf;...
+                      0                          0].^2;
 % min_dists2 is n_submeshes x 2, first column is min distance^2 away from body centroid or tail axis line segment to be worth caring about
 % 2nd column is min distance^2 away from closest mesh node to be worth caring about
 % if point passes both those tests, we compute the exact distance to the closest point on the closest mesh element
@@ -416,6 +417,9 @@ for i = 1:length(Mesh)
 end
  assembly_input.Tail.motor_orientation = NaN(3,1);
     
+ 
+ assembly_input.accuracy.iterative_refinement = input.accuracy.iterative_refinement;
+ 
     assembly_input.accuracy.mesh.ignore_interaction = input.accuracy.mesh.ignore_interaction;
     assembly_input.accuracy.mesh.integration_tol.stokeslet = input.accuracy.mesh.integration_tol.stokeslet;
     assembly_input.accuracy.mesh.integration_tol.stresslet = input.accuracy.mesh.integration_tol.stresslet;
@@ -456,8 +460,10 @@ end
     assembly_input.performance.numels_max = input.performance.numels_max;
     assembly_input.performance.verbose = input.performance.verbose;
     assembly_input.repulsion = repulsion;
-    assembly_input.link_breakage_distance = 0*0.2; % links break if the closest point from the link line segment to any body node is less than this
+    assembly_input.link_breakage_distance = 0; % links break if the closest point from the link line segment to any body node is less than this
     % (should really compute closest distance to curved mesh, but this is good enough?)
+    assembly_input.link_breakage_submeshes = [1 2]; % break if close to these submeshes
+    
     
     switch input.problemtype
         case "resistance"
@@ -632,6 +638,7 @@ end
                 interp_y_tic = tic;
                 %                     try
                 interp_y_test2;
+                return
                 %                 interp_y;
                 %                     catch
                 %                         disp('Error in interp_y.  Continuing to next sweep iter.');

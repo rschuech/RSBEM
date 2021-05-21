@@ -42,7 +42,10 @@ BI_parameters.rotating_flagellum = assembly_input.rotating_flagellum;
 BI_parameters.Tail.motorBC = assembly_input.Tail.motorBC;
 BI_parameters.Tail.submesh_index = assembly_input.Tail.submesh_index;
 BI_parameters.Tail.motor_orientation = assembly_input.Tail.motor_orientation;
-BI_parameters.accuracy = assembly_input.accuracy;
+% BI_parameters.accuracy = assembly_input.accuracy;
+BI_parameters.accuracy.mesh = assembly_input.accuracy.mesh;
+BI_parameters.accuracy.network = assembly_input.accuracy.network;
+BI_parameters.accuracy.triangle_integration = assembly_input.accuracy.triangle_integration;
 BI_parameters.constants = assembly_input.constants;
 
 

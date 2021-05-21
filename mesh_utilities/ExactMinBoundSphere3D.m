@@ -85,6 +85,7 @@ if size(X,1)<4
 end
 
 % Randomly permute the point set
+rng(0);
 idx=randperm(size(X,1));
 X=X(idx(:),:);
 if size(X,1)<1E3

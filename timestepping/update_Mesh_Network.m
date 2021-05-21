@@ -50,7 +50,9 @@ for n = 1:Network.n_links
         
         edge = createEdge3d(Network.nodes( Network.links(n,1) , :), Network.nodes( Network.links(n,2) , :));
         
-        [dists] = distancePointEdge3d(Mesh(1).nodes, edge);
+%         [dists] = distancePointEdge3d(Mesh(1).nodes, edge); % just body
+        
+          [dists] = distancePointEdge3d(vertcat(Mesh(assembly_input.link_breakage_submeshes).nodes), edge); % body and tail
         
         % mindists(n) = min(dist);
         

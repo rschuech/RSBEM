@@ -1,5 +1,6 @@
 function [A_force, A_torque] = compute_force_torque_matrices(Mesh, matrix_props, index_mapping,input)
-
+%%
+% tic
 %unlike other integration functions, this and compute_torque_integral are
 %designed to only take entire Mesh as input, since it must go with solution
 %f to be useful and f is presumably for entire Mesh
@@ -54,8 +55,12 @@ function [A_force, A_torque] = compute_force_torque_matrices(Mesh, matrix_props,
         % need to see if above problem still occurs after code revision 9/9/2020
         
         %         for elem_i = 1:tot_elems  %not parallel but who cares - only need to do this once per run, and these are easy operations
-        
-        parfor elem_i = 1:Mesh(i_mesh).n_elements
+     
+        for elem_i = 1:Mesh(i_mesh).n_elements  % this was a parfor but that results in nondeterministic output since
+            % it contains a running sum and if the order is random, the
+            % roundoff errors will be random
+            % seems like there's little difference in run time, if anything
+            % for may be faster than parfor for simple spherical swimmer
 
             element_node_inds = Mesh(i_mesh).elements(elem_i,:); % local inds for nodes of current element  1 x 6
         
@@ -88,6 +93,10 @@ function [A_force, A_torque] = compute_force_torque_matrices(Mesh, matrix_props,
             temp(3,inds(1:6)) = -VL_moments_submesh(elem_i,7:12);
             
             A_torque_temp = A_torque_temp + temp;
+            % perhaps this can be changed back to parfor with deterministic
+            % A_torque_temp and A_force_temp if instead of a cumulative sum
+            % we store each value in a big matrix and then add it all up
+            % outside the loop
             
         end %elems
         
@@ -97,4 +106,4 @@ function [A_force, A_torque] = compute_force_torque_matrices(Mesh, matrix_props,
     end
     
 % end
-
+% toc

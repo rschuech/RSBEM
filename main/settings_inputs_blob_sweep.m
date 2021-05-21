@@ -278,8 +278,6 @@ inputs.coincident_submeshes = { { "Body", "Transverse", "Coplanar_Hairs", "Norma
 end
 
 
-inputs.accuracy.iterative_refinement = true;
-
 %ignore hydrodynamic interaction integrals between body and tail(s)?
 % Dave suggests the matrix built with this true might be sparse and good for preconditioning the full system (with this false) with an iterative solver
 inputs.accuracy.mesh.ignore_interaction = false;
@@ -327,7 +325,7 @@ end
 f2 = 1/2/2/2    *100  ;
 
 inputs.accuracy.mesh.epsilon.default =  4E-5 *factor  * Inf; % used if a value not specified for a particular submesh
-inputs.accuracy.mesh.epsilon.Body = 4E-5 ; inputs.accuracy.mesh.epsilon.Tail = 4E-5  ;
+inputs.accuracy.mesh.epsilon.Body = eps_body ; inputs.accuracy.mesh.epsilon.Tail = eps_tail  ;
 
 inputs.accuracy.mesh.epsilon.Transverse = 10E-9 * 1E6 / 2;  % transverse sheet is theoretically 2 layers of cell membrane, each 5 nm thick.  eps should be the radius of a thin structure
 inputs.accuracy.mesh.epsilon.Coplanar_Hairs = 10E-9 * 1E6 / 2; % conveniently, hairs all also theoretically 10 nm wide
@@ -351,13 +349,13 @@ inputs.accuracy.network.epsilon = 1/4/pi;
 %traction tolerances are for integrating the regularized Stokeslet velocity
 %field function (S) over the surface when forming the boundary integral
 %equations
-inputs.accuracy.mesh.integration_tol.stokeslet.abstol =   16E-3   *factor  * f2 /1; %scale by min (worst case) element size compared to convergence test case
-inputs.accuracy.mesh.integration_tol.stokeslet.reltol = 0;  %control error via abstol
-inputs.accuracy.mesh.integration_tol.stokeslet.maxevals = Inf; %don't limit maxevals
-
-% inputs.accuracy.mesh.integration_tol.stokeslet.abstol =   Inf; %scale by min (worst case) element size compared to convergence test case
-% inputs.accuracy.mesh.integration_tol.stokeslet.reltol = Inf;  %control error via abstol
+% inputs.accuracy.mesh.integration_tol.stokeslet.abstol =   16E-3   *factor  * f2 /1; %scale by min (worst case) element size compared to convergence test case
+% inputs.accuracy.mesh.integration_tol.stokeslet.reltol = 0;  %control error via abstol
 % inputs.accuracy.mesh.integration_tol.stokeslet.maxevals = Inf; %don't limit maxevals
+
+inputs.accuracy.mesh.integration_tol.stokeslet.abstol =   Inf; %scale by min (worst case) element size compared to convergence test case
+inputs.accuracy.mesh.integration_tol.stokeslet.reltol = Inf;  %control error via abstol
+inputs.accuracy.mesh.integration_tol.stokeslet.maxevals = Inf; %don't limit maxevals
 
 %force tolerances are for integrating simply 1 * hS * phi over the
 %surface.  this is used primarily for integrating force, e.g. for the
@@ -504,7 +502,7 @@ end
 
 switch inputs.bugtype
     case "bacteria"
-        inputs.accuracy.check_intersections_n_angles = 100;  %how many equally spaced phase angles to test for the body hitting the tail.  10 seems safe.  Nope, need more than 10:  trying 20....  Nope, 20 not always enough.  50?...
+        inputs.accuracy.check_intersections_n_angles = 100*0;  %how many equally spaced phase angles to test for the body hitting the tail.  10 seems safe.  Nope, need more than 10:  trying 20....  Nope, 20 not always enough.  50?...
     case {"dino", "sheet"}
         inputs.accuracy.check_intersections_n_angles = []; %not rotating tail like in bacteria case
 end
@@ -516,7 +514,7 @@ inputs.constants.power = 1E-3;  %power assumed to be dissipated by all bugs when
 
 
 inputs.accuracy.triangle_integration.reference_nodes = [0 1 0; 0 0 1];  %reference triangle normalized node coords
-inputs.accuracy.triangle_integration.rule = 2;
+inputs.accuracy.triangle_integration.rule = 3;
 [inputs.accuracy.triangle_integration.G, inputs.accuracy.triangle_integration.Weights, inputs.accuracy.triangle_integration.PTS] =  SMPRMS( 2, inputs.accuracy.triangle_integration.rule );  %always 2 dimensions and constant rule # for all integrals (2nd arg is rule #)
 
 

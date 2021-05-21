@@ -4,7 +4,9 @@ color_links = true;
 
 t = 0;
 tfinal = sol.x(end);
- tfinal = 1.6;
+%  tfinal = 0.14;
+% tfinal = 0.54;
+% tfinal = 2;
 
 
 % Repulsion = calc_repulsive_forces(Mesh0, Network0, index_mapping, assembly_input.repulsion);
@@ -69,7 +71,9 @@ for i = 1:length(swimmer_axes)
     
     
     if i == 1
-        title_handle = title(swimmer_axes(1),{"t = " + num2str(t) , "# offenders = " + num2str(sum(Repulsion.is_inside == 1))}); %,"PE = " + num2str(PE,2)
+%         title_handle = title(swimmer_axes(1),{"t = " + num2str(t) , "# offenders = " + num2str(sum(Repulsion.is_inside == 1))}); %,"PE = " + num2str(PE,2)
+   title_handle = title(swimmer_axes(1),{"t = " + num2str(t) }); %,"PE = " + num2str(PE,2)
+  
     end
     
     
@@ -169,7 +173,7 @@ ylabel('PE');
 
 ax4 = axes('position',  [ 0.068765        0.048219       0.8875       0.1551 ],'FontSize',11);
 yyaxis left
-repulsion_force_plot = plot(stored_output.time,stored_output.repulsion.total_force_mag,'-','linewidth',2);
+% repulsion_force_plot = plot(stored_output.time,stored_output.repulsion.total_force_mag,'-','linewidth',2);
 xlabel('time (s)');  xlim([0 tfinal]); ylims = ylim; ylim([-2 ylims(2)]);
 ylabel('repulsive force');
 hold on
@@ -178,7 +182,7 @@ time_line(3) = plot([0 0], ylims,'--','color',repmat(0.5,1,3),'linewidth',1);
 breakages{3} = plot( repmat(stored_output.link_breakage_time(logical_inds),1,2)' , repmat(ylims,sum(logical_inds),1)',':','linewidth',0.5,'Color',[0 0 0 0.25]);
 hold off
 yyaxis right
-repulsion_force_plot = plot(stored_output.time,stored_output.repulsion.total_torque_mag,'-','linewidth',2);
+% repulsion_force_plot = plot(stored_output.time,stored_output.repulsion.total_torque_mag,'-','linewidth',2);
 xlim([0 tfinal]);
 ylim([-2 Inf]);
 ylabel('repulsive torque');
@@ -213,11 +217,11 @@ drawnow
 tic
 
 
-save_vid = true;
+save_vid = false;
 if save_vid
     try, close(vidh); end
     %     vidh = VideoWriter('C:\Hull\swimmer network videos\swimmer base case','MPEG-4');
-    vidh = VideoWriter('C:\Users\rudi\Desktop\RD\Tulane vids\E 10 eta 500 d 0.05 g 50 link_breakage_dist 0 refined timestepping','MPEG-4');  % Motion JPEG AVI
+    vidh = VideoWriter('C:\Users\rudi\Desktop\RD\Tulane vids\link breakage body 0 tail 0 E 100 eta 5000 long network wider tube choppy maxstep 1E-3','MPEG-4');  % Motion JPEG AVI
     vidh.FrameRate = 30; %50; 30
     vidh.Quality = 95; %1-100
     resolution = '-r0';
@@ -229,9 +233,9 @@ end
 
 clear links
 
-%  T = linspace(0,tfinal,10); % 600
+  T = linspace(0,tfinal, 5); % 600   % 
 % T = sol(1).x( sol(1).x <= Inf);
-T = 0: 1*  1E-3 : tfinal;
+%  T = 0: 1*  1E-3 : tfinal;
 
 time = T(  T >= 0 & T <= Inf);
 % PE = NaN(1, length(time));
@@ -252,7 +256,32 @@ for t = time  %  sol(end).x(end)
     [Mesh, Network, mesh_node_parameters, y_swimmer] = update_Mesh_Network(Mesh0, Network,t, y, mesh_node_parameters,index_mapping, assembly_input);
     
     
-    
+    %%
+           active = true(Network.n_nodes,1); % active if at least one working link, passive if no active links (all E == 0)
+        for i = 1:Network.n_nodes
+            active(i) = any( Network.E(  Network.link_members{i}(1,:) ) ~= 0 ); % node is active if it has at least one link with nonzero stiffness
+        end
+        
+%         active_network_nodes = Network.nodes(active,:);
+        % any passive nodes default (and remain) as NaN / "not inside" (even though they actually may be inside)
+        distance2mesh = NaN(Network.n_nodes,1);
+        is_inside = false(Network.n_nodes,1);
+        x = NaN(Network.n_nodes,3);
+        
+        [distance2mesh(active), x(active,:), xi_eta, mesh_index, element_index, is_inside(active)] = dist2mesh(Network.nodes(active,:), Mesh, index_mapping, assembly_input.repulsion.mindist2);
+        % toc
+        
+        
+        inside_threshold = 0.006; % body radius / 100
+        % if inside further than this, stop simulation and put node back on surface
+        
+        distance2mesh(is_inside)
+  
+        
+        if any(distance2mesh(is_inside) > 0.006 )
+           bad_times(end+1) = t;
+        end
+        %%
     
     %     figure(351);
     %     histogram(f);
@@ -359,7 +388,7 @@ for t = time  %  sol(end).x(end)
     end
     
     [~,ind] = near(t,stored_output.time);
-    any_inside = stored_output.repulsion.any_inside(ind);
+    any_inside = stored_output.trespassing.any_inside(ind);
     if any_inside
         str = "Network node(s) inside";
     else
